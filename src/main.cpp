@@ -222,9 +222,9 @@ void lvglTask(void *pv)
     if (xQueueReceive(uiQueue, &msg, 0))
     {
       Serial.printf("Received MQTT message: CPU: %d%%, MEM: %d%%, TEMP: %.2f°C\n", msg.cpu, msg.mem, msg.temp);
-      // ui_update_cpu(msg.cpu);
-      // ui_update_mem(msg.mem);
-      // ui_update_temp(msg.temp);
+      ui_update_cpu(msg.cpu);
+      ui_update_mem(msg.mem);
+      ui_update_temp(msg.temp);
     }
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)

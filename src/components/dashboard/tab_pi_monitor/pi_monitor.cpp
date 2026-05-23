@@ -30,7 +30,7 @@ static lv_obj_t *title;
  *  STATIC PROTOTYPES
  **********************/
 
-void create_chart(
+lv_obj_t *create_chart(
     lv_obj_t **chart,
     lv_chart_series_t **ser,
     lv_obj_t **label,
@@ -42,7 +42,7 @@ void create_chart(
     lv_obj_t *cont = lv_obj_create(parent);
 
     lv_obj_set_size(cont, 220, 90);
-    lv_obj_set_pos(cont, x, 60);
+    // lv_obj_set_pos(cont, x, 60);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -84,7 +84,7 @@ void create_chart(
 
     *chart = lv_chart_create(cont);
 
-    lv_obj_set_size(*chart, 200, 45);
+    lv_obj_set_size(*chart, 180, 50);
 
     lv_obj_align(*chart, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -118,15 +118,14 @@ void create_chart(
             *ser,
             0);
     }
+    return cont;
 }
 
-void create_temp_gauge(lv_obj_t *parent)
+lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
     lv_obj_set_size(cont, 400, 90);
-
-    lv_obj_set_pos(cont, 10, 165);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -146,7 +145,7 @@ void create_temp_gauge(lv_obj_t *parent)
         lv_color_white(),
         0);
 
-    lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 10);
+    lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 0);
 
     //  create temp bar
     static lv_style_t style_indic;
@@ -174,32 +173,54 @@ void create_temp_gauge(lv_obj_t *parent)
         lv_color_white(),
         0);
     lv_obj_align(temp_label, LV_ALIGN_CENTER, 0, 0);
+    return cont;
 }
 
 void pi_monitor_tab_create(lv_obj_t *parent)
 {
     lv_obj_t *panel1 = lv_obj_create(parent);
-    lv_obj_set_size(panel1, 460, 180);
+    lv_obj_set_size(panel1, 445, 195);
 
-    // create_chart(
-    //     &cpu_chart,
-    //     &cpu_ser,
-    //     &cpu_label,
-    //     panel1,
-    //     "CPU",
-    //     10,
-    //     lv_color_hex(0x00D0FF));
+    static lv_coord_t chart_col_dsc[] = {
+        LV_GRID_FR(1), // 50%
+        LV_GRID_FR(1), // 50%
+        LV_GRID_TEMPLATE_LAST};
 
-    // create_chart(
-    //     &mem_chart,
-    //     &mem_ser,
-    //     &mem_label,
-    //     panel1,
-    //     "MEMORY",
-    //     250,
-    //     lv_color_hex(0x00E676));
+    static lv_coord_t chart_row_dsc[] = {
+        LV_GRID_FR(1), // hàng trên
+        LV_GRID_FR(1), // hàng dưới
+        LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_layout(panel1, LV_LAYOUT_GRID);
+    lv_obj_set_grid_dsc_array(panel1, chart_col_dsc, chart_row_dsc);
 
-    create_temp_gauge(panel1);
+    lv_obj_t *cpu_cont = create_chart(
+        &cpu_chart,
+        &cpu_ser,
+        &cpu_label,
+        panel1,
+        "CPU",
+        10,
+        lv_color_hex(0x00D0FF));
+    lv_obj_set_grid_cell(cpu_cont,
+                         LV_GRID_ALIGN_STRETCH, 0, 1,
+                         LV_GRID_ALIGN_STRETCH, 0, 1);
+
+    lv_obj_t *mem_cont = create_chart(
+        &mem_chart,
+        &mem_ser,
+        &mem_label,
+        panel1,
+        "MEMORY",
+        250,
+        lv_color_hex(0x00E676));
+    lv_obj_set_grid_cell(mem_cont,
+                         LV_GRID_ALIGN_STRETCH, 1, 1,
+                         LV_GRID_ALIGN_STRETCH, 0, 1);
+
+    lv_obj_t *temp_cont = create_temp_gauge(panel1);
+    lv_obj_set_grid_cell(temp_cont,
+                         LV_GRID_ALIGN_STRETCH, 0, 2,
+                         LV_GRID_ALIGN_STRETCH, 1, 1);
 }
 
 void ui_update_cpu(int value)
