@@ -24,7 +24,8 @@
  * Enable LVGL Demo Widgets
  * #define LV_USE_DEMO_WIDGETS 1
  ******************************************************************************/
-#include "ui_dashboard.h"
+#include "components/dashboard/ui_dashboard.h"
+#include "components/dashboard/tab_pi_monitor/pi_monitor.h"
 // #define DIRECT_MODE // Uncomment to enable full frame buffer
 
 /*******************************************************************************
@@ -200,7 +201,7 @@ void initialUI()
     indev_drv.read_cb = my_touchpad_read;
     lv_indev_drv_register(&indev_drv);
 
-    ui_dashboard_create();
+    lv_dashboard_create();
   }
 }
 
@@ -211,6 +212,7 @@ void initialUI()
 
 void lvglTask(void *pv)
 {
+  // char msg[64];
   UIMessage msg;
 
   while (1)
@@ -220,9 +222,9 @@ void lvglTask(void *pv)
     if (xQueueReceive(uiQueue, &msg, 0))
     {
       Serial.printf("Received MQTT message: CPU: %d%%, MEM: %d%%, TEMP: %.2f°C\n", msg.cpu, msg.mem, msg.temp);
-      ui_update_cpu(msg.cpu);
-      ui_update_mem(msg.mem);
-      ui_update_temp(msg.temp);
+      // ui_update_cpu(msg.cpu);
+      // ui_update_mem(msg.mem);
+      // ui_update_temp(msg.temp);
     }
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)
@@ -238,6 +240,21 @@ void lvglTask(void *pv)
     vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
+
+// WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
+//              {
+//                  if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED)
+//                  {
+//                      Serial.printf(
+//                          "WiFi lost connection. Reason: %d\n",
+//                          info.wifi_sta_disconnected.reason);
+//                  }
+//              });
+
+// =========================
+// WIFI Task
+// Core 0
+// =========================
 
 void wifiTask(void *pv)
 {
