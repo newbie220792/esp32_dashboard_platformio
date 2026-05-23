@@ -3,8 +3,6 @@
  *
  */
 
-#pragma once
-
 #ifndef LV_UI_DASHBOARD_H
 #define LV_UI_DASHBOARD_H
 
@@ -13,19 +11,24 @@ extern "C"
 {
 #endif
 
-// #define LV_CONF_INCLUDE_SIMPLE
+/*********************
+ *      INCLUDES
+ *********************/
 #include <lvgl.h>
 #include <stdio.h>
+
+    /*********************
+     *      DEFINES
+     *********************/
+
+    /**********************
+     *      TYPEDEFS
+     **********************/
 
     /**********************
      * GLOBAL PROTOTYPES
      **********************/
-
-    void ui_dashboard_create(void);
-
-    void ui_update_cpu(int value);
-    void ui_update_mem(int value);
-    void ui_update_temp(float value);
+    void lv_dashboard_create(void);
 
     /**********************
      *      MACROS
@@ -35,4 +38,4 @@ extern "C"
 } /* extern "C" */
 #endif
 
-#endif /*LV_DEMO_WIDGETS_H*/
+#endif /*LV_UI_DASHBOARD_H*/
