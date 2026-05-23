@@ -4,9 +4,6 @@
 // #include <PubSubClient.h>
 // #include <Arduino.h>
 
-#include <WiFiClient.h>
-#include <PubSubClient.h>
-
 #ifdef __cplusplus
 extern "C"
 {

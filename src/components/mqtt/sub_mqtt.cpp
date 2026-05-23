@@ -13,7 +13,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     Serial.print("Topic: ");
     Serial.println(topic);
 
-    StaticJsonDocument<256> doc;
+    JsonDocument doc;
 
     DeserializationError error = deserializeJson(doc, payload, length);
 

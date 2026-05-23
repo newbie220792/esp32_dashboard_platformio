@@ -2,7 +2,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include "ui_dashboard.h"
 #include <ArduinoJson.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>

@@ -72,7 +72,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
  * Please config the touch panel in touch.h
  ******************************************************************************/
 #include "touch.h"
-#include "wifi.h"
+#include "components/wifi/wifi.h"
 #include "ui_msg.h"
 
 /* Change to your screen resolution */
@@ -211,7 +211,6 @@ void initialUI()
 
 void lvglTask(void *pv)
 {
-  // char msg[64];
   UIMessage msg;
 
   while (1)
@@ -239,21 +238,6 @@ void lvglTask(void *pv)
     vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
-
-// WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
-//              {
-//                  if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED)
-//                  {
-//                      Serial.printf(
-//                          "WiFi lost connection. Reason: %d\n",
-//                          info.wifi_sta_disconnected.reason);
-//                  }
-//              });
-
-// =========================
-// WIFI Task
-// Core 0
-// =========================
 
 void wifiTask(void *pv)
 {
