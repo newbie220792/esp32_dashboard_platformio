@@ -10,6 +10,7 @@
 #include "tab_profile/tab_profile.h"
 #include "tab_weather/tab_weather.h"
 #include "tab_pi_monitor/pi_monitor.h"
+#include "header_panel/header.h"
 #include "disp_size_t.h"
 
 // #ifndef LV_USE_DEMO_WIDGETS
@@ -151,9 +152,71 @@ void lv_dashboard_create(void)
         lv_style_set_border_width(&style_bullet, 0);
         lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
 
-        tv = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, tab_h);
-
         lv_obj_set_style_text_font(lv_scr_act(), font_normal, 0);
+
+        // main_pannel
+        static lv_coord_t main_col_dsc[] = {
+            LV_GRID_FR(1),
+            LV_GRID_TEMPLATE_LAST};
+
+        static lv_coord_t main_row_dsc[] = {
+            LV_GRID_CONTENT, // header
+            LV_GRID_FR(1),   // content
+            LV_GRID_TEMPLATE_LAST};
+
+        lv_obj_t *main_panel = lv_obj_create(lv_scr_act());
+        lv_obj_set_size(main_panel, LV_PCT(100), LV_PCT(100));
+
+        lv_obj_set_layout(main_panel, LV_LAYOUT_GRID);
+
+        lv_obj_set_grid_dsc_array(
+            main_panel,
+            main_col_dsc,
+            main_row_dsc);
+        // lv_obj_set_style_bg_color(
+        //     main_panel,
+        //     lv_color_hex(0x101010),
+        //     0);
+
+        lv_obj_set_style_border_width(main_panel, 0, 0);
+
+        // lv_obj_set_style_pad_all(main_panel, 10, 0);
+
+        // lv_obj_set_style_pad_gap(main_panel, 10, 0);
+
+        // header_pannel
+        lv_obj_t *header_panel = create_header_panel(main_panel);
+        lv_obj_set_grid_cell(
+            header_panel,
+            LV_GRID_ALIGN_STRETCH, 0, 1,
+            LV_GRID_ALIGN_STRETCH, 0, 1);
+
+        // content_pannel
+        lv_obj_t *content_pannel = lv_obj_create(main_panel);
+        lv_obj_set_grid_cell(
+            content_pannel,
+            LV_GRID_ALIGN_STRETCH, 0, 1,
+            LV_GRID_ALIGN_STRETCH, 1, 1);
+        lv_obj_set_size(
+            content_pannel,
+            LV_PCT(100),
+            LV_PCT(100));
+
+        lv_obj_set_style_border_width(
+            content_pannel,
+            0,
+            0);
+
+        lv_obj_set_style_pad_all(
+            content_pannel,
+            0,
+            0);
+
+        tv = lv_tabview_create(content_pannel, LV_DIR_TOP, 30);
+        lv_obj_set_size(
+            tv,
+            LV_PCT(100),
+            LV_PCT(100));
 
         if (disp_size == DISP_LARGE)
         {

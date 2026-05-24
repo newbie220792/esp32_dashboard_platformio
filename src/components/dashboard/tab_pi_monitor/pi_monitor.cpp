@@ -41,8 +41,7 @@ lv_obj_t *create_chart(
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
-    lv_obj_set_size(cont, 220, 90);
-    // lv_obj_set_pos(cont, x, 60);
+    lv_obj_set_size(cont, 150, 90);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -51,11 +50,15 @@ lv_obj_t *create_chart(
 
     lv_obj_set_style_border_width(cont, 0, 0);
 
-    lv_obj_set_style_radius(cont, 18, 0);
+    lv_obj_set_style_radius(cont, 10, 0);
 
-    lv_obj_set_style_pad_all(cont, 10, 0);
+    // lv_obj_set_style_pad_all(cont, 10, 0);
 
     lv_obj_t *txt = lv_label_create(cont);
+    lv_obj_set_style_text_font(
+        txt,
+        &lv_font_montserrat_10,
+        0);
 
     lv_label_set_text(txt, name);
 
@@ -77,7 +80,7 @@ lv_obj_t *create_chart(
 
     lv_obj_set_style_text_font(
         *label,
-        &lv_font_montserrat_14,
+        &lv_font_montserrat_10,
         0);
 
     lv_obj_align(*label, LV_ALIGN_TOP_RIGHT, 0, 0);
@@ -159,7 +162,6 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     temp_bar = lv_bar_create(cont);
     lv_obj_add_style(temp_bar, &style_indic, LV_PART_INDICATOR);
     lv_obj_set_size(temp_bar, 200, 20);
-    // lv_obj_center(temp_bar);
     lv_obj_align(temp_bar, LV_ALIGN_CENTER, 0, 0);
     lv_bar_set_range(temp_bar, -20, 80);
 
@@ -179,7 +181,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 void pi_monitor_tab_create(lv_obj_t *parent)
 {
     lv_obj_t *panel1 = lv_obj_create(parent);
-    lv_obj_set_size(panel1, 445, 195);
+    lv_obj_set_size(panel1, LV_PCT(100), LV_PCT(100));
 
     static lv_coord_t chart_col_dsc[] = {
         LV_GRID_FR(1), // 50%
