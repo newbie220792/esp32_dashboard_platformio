@@ -10,7 +10,7 @@
 #include "wifi.h"
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiClient.h>
+// #include <WiFiClient.h>
 #include <PubSubClient.h>
 
 const char *ssid = "Nha Cua En";

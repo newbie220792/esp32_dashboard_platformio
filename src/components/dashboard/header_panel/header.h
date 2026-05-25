@@ -8,27 +8,23 @@
 #ifndef LV_HEADER_H
 #define LV_HEADER_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-// #define LV_CONF_INCLUDE_SIMPLE
 #include <lvgl.h>
 #include <stdio.h>
+#include <Arduino.h>
+class HeaderPanel
+{
+public:
+    HeaderPanel(lv_obj_t *parent);
 
-    /**********************
-     * GLOBAL PROTOTYPES
-     **********************/
+    void updateWifiStatus(bool isConnected);
 
-    lv_obj_t *create_header_panel(lv_obj_t *parent);
+    void updateCurrentTime(const char *currentTime);
 
-        /**********************
-     *      MACROS
-     **********************/
+    lv_obj_t *getPanel();
 
-#ifdef __cplusplus
-} /* extern "C" */
+private:
+    lv_obj_t *time_label;
+    lv_obj_t *wifi_label;
+    lv_obj_t *header_panel;
+};
 #endif
-
-#endif /*LV_HEADER_H*/

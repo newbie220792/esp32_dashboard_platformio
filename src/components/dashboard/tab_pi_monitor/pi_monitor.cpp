@@ -36,7 +36,6 @@ lv_obj_t *create_chart(
     lv_obj_t **label,
     lv_obj_t *parent,
     const char *name,
-    int x,
     lv_color_t color)
 {
     lv_obj_t *cont = lv_obj_create(parent);
@@ -201,7 +200,6 @@ void pi_monitor_tab_create(lv_obj_t *parent)
         &cpu_label,
         panel1,
         "CPU",
-        10,
         lv_color_hex(0x00D0FF));
     lv_obj_set_grid_cell(cpu_cont,
                          LV_GRID_ALIGN_STRETCH, 0, 1,
@@ -213,7 +211,6 @@ void pi_monitor_tab_create(lv_obj_t *parent)
         &mem_label,
         panel1,
         "MEMORY",
-        250,
         lv_color_hex(0x00E676));
     lv_obj_set_grid_cell(mem_cont,
                          LV_GRID_ALIGN_STRETCH, 1, 1,

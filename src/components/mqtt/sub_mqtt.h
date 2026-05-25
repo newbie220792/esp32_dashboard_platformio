@@ -12,15 +12,7 @@ extern "C"
 {
 #endif
 
-    // typedef struct
-    // {
-    //     int cpu;
-    //     int mem;
-    //     float temp;
-
-    // } UIMessage;
-
-    void callback(char *topic, byte *payload, unsigned int length);
+    void callback(char* topic, byte* payload, unsigned int length);
 
 #ifdef __cplusplus
 } /* extern "C" */
