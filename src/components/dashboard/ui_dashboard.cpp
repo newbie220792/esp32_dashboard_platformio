@@ -10,7 +10,9 @@
 #include "tab_profile/tab_profile.h"
 #include "tab_weather/tab_weather.h"
 #include "tab_pi_monitor/pi_monitor.h"
+#include "header_panel/header.h"
 #include "disp_size_t.h"
+#include <config/ui_constants.h>
 
 // #ifndef LV_USE_DEMO_WIDGETS
 //     #define LV_USE_DEMO_WIDGETS 1
@@ -151,35 +153,35 @@ void lv_dashboard_create(void)
         lv_style_set_border_width(&style_bullet, 0);
         lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
 
-        tv = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, tab_h);
-
         lv_obj_set_style_text_font(lv_scr_act(), font_normal, 0);
 
-        if (disp_size == DISP_LARGE)
-        {
-                lv_obj_t *tab_btns = lv_tabview_get_tab_btns(tv);
-                lv_obj_set_style_pad_left(tab_btns, LV_HOR_RES / 2, 0);
-                lv_obj_t *logo = lv_img_create(tab_btns);
-                LV_IMG_DECLARE(img_lvgl_logo);
-                lv_img_set_src(logo, &img_lvgl_logo);
-                lv_obj_align(logo, LV_ALIGN_LEFT_MID, -LV_HOR_RES / 2 + 25, 0);
+        // main_pannel
+        lv_obj_t *main_panel = lv_obj_create(lv_scr_act());
+        lv_obj_set_size(main_panel, LV_PCT(100), LV_PCT(100));
+        lv_obj_set_style_pad_all(main_panel, 0, 0);
+        lv_obj_set_style_border_width(main_panel, 0, 0);
 
-                lv_obj_t *label = lv_label_create(tab_btns);
-                lv_obj_add_style(label, &style_title, 0);
-                lv_label_set_text(label, "LVGL v8");
-                lv_obj_align_to(label, logo, LV_ALIGN_OUT_RIGHT_TOP, 10, 0);
+        // header_pannel
+        HeaderPanel *header = new HeaderPanel(main_panel);
 
-                label = lv_label_create(tab_btns);
-                lv_label_set_text(label, "Widgets demo");
-                lv_obj_add_style(label, &style_text_muted, 0);
-                lv_obj_align_to(label, logo, LV_ALIGN_OUT_RIGHT_BOTTOM, 10, 0);
-        }
+        // content_pannel
+        lv_obj_t *content_panel = lv_obj_create(main_panel);
+        lv_obj_set_size(content_panel, UI::SCREEN_WIDTH, UI::SCREEN_HEIGHT - UI::HEADER_HEIGHT);
 
-        lv_obj_t *t1 = lv_tabview_add_tab(tv, "PI Monitoring");
-        lv_obj_t *t2 = lv_tabview_add_tab(tv, "Profile");
-        lv_obj_t *t3 = lv_tabview_add_tab(tv, "Weather");
+        lv_obj_set_style_border_width(content_panel, 0, 0);
 
-        pi_monitor_tab_create(t1);
-        profile_create(t2, disp_size);
-        lv_weather_create(t3);
+        lv_obj_set_style_pad_all(content_panel, 0, 0);
+        lv_obj_align(content_panel, LV_ALIGN_TOP_MID, 0, UI::HEADER_HEIGHT);
+
+        // TAB_VIEW
+        // tv = lv_tabview_create(content_pannel, LV_DIR_TOP, 30);
+        // lv_obj_set_size(tv, LV_PCT(100), LV_PCT(100));
+
+        // lv_obj_t *t1 = lv_tabview_add_tab(tv, "PI Monitoring");
+        // lv_obj_t *t2 = lv_tabview_add_tab(tv, "Profile");
+        // lv_obj_t *t3 = lv_tabview_add_tab(tv, "Weather");
+
+        pi_monitor_tab_create(content_panel);
+        // profile_create(content_panel, disp_size);
+        // lv_weather_create(t3);
 }

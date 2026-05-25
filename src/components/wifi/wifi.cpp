@@ -10,11 +10,11 @@
 #include "wifi.h"
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiClient.h>
+// #include <WiFiClient.h>
 #include <PubSubClient.h>
 
-const char *ssid = "ssid";
-const char *password = "password";
+const char *ssid = "";
+const char *password = "";
 const char *mqtt_server = "192.168.1.210";
 const char *topic = "pi/monitoring";
 

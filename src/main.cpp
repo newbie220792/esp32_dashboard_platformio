@@ -76,7 +76,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include "components/wifi/wifi.h"
 #include "ui_msg.h"
 
-/* Change to your screen resolution */
+/* Change to your screen resolution */  
 static uint32_t screenWidth;
 static uint32_t screenHeight;
 static uint32_t bufSize;
@@ -125,8 +125,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
     data->state = LV_INDEV_STATE_REL;
   }
 }
-
-// #define BLACK 0x0000
 
 void initialUI()
 {
@@ -212,7 +210,6 @@ void initialUI()
 
 void lvglTask(void *pv)
 {
-  // char msg[64];
   UIMessage msg;
 
   while (1)
@@ -240,16 +237,6 @@ void lvglTask(void *pv)
     vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
-
-// WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info)
-//              {
-//                  if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED)
-//                  {
-//                      Serial.printf(
-//                          "WiFi lost connection. Reason: %d\n",
-//                          info.wifi_sta_disconnected.reason);
-//                  }
-//              });
 
 // =========================
 // WIFI Task
