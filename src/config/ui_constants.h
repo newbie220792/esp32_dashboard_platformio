@@ -6,5 +6,5 @@ namespace UI
     constexpr int SCREEN_HEIGHT = 270;
 
     // Header
-    constexpr int HEADER_HEIGHT = 50;
+    constexpr int HEADER_HEIGHT = 30;
 }
