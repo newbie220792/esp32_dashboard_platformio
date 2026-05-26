@@ -2,7 +2,7 @@
 #include <config/colors.h>
 #include <config/ui_constants.h>
 
-HeaderPanel::HeaderPanel(lv_obj_t *parent)
+void HeaderPanel::init(lv_obj_t *parent)
 {
     header_panel = lv_obj_create(parent);
     lv_obj_set_style_text_font(header_panel, &lv_font_montserrat_12, 0);

@@ -10,7 +10,6 @@
 #include "tab_profile/tab_profile.h"
 #include "tab_weather/tab_weather.h"
 #include "tab_pi_monitor/pi_monitor.h"
-#include "header_panel/header.h"
 #include "disp_size_t.h"
 #include <config/ui_constants.h>
 
@@ -33,10 +32,6 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-// static void analytics_create(lv_obj_t *parent);
-// static void shop_create(lv_obj_t *parent);
-// static void color_changer_create(lv_obj_t *parent);
-// static void weather_create(lv_obj_t *parent);
 
 /**********************
  *  STATIC VARIABLES
@@ -90,54 +85,8 @@ void lv_dashboard_create(void)
         font_large = LV_FONT_DEFAULT;
         font_normal = LV_FONT_DEFAULT;
 
-        lv_coord_t tab_h;
-        if (disp_size == DISP_LARGE)
-        {
-                tab_h = 70;
-#if LV_FONT_MONTSERRAT_24
-                font_large = &lv_font_montserrat_24;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_24 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-#if LV_FONT_MONTSERRAT_16
-                font_normal = &lv_font_montserrat_16;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_16 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-        }
-        else if (disp_size == DISP_MEDIUM)
-        {
-                tab_h = 45;
-#if LV_FONT_MONTSERRAT_20
-                font_large = &lv_font_montserrat_20;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_20 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-#if LV_FONT_MONTSERRAT_14
-                font_normal = &lv_font_montserrat_14;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_14 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-        }
-        else
-        { /* disp_size == DISP_SMALL */
-                tab_h = 45;
-#if LV_FONT_MONTSERRAT_18
-                font_large = &lv_font_montserrat_18;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_18 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-#if LV_FONT_MONTSERRAT_12
-                font_normal = &lv_font_montserrat_12;
-#else
-                LV_LOG_WARN("LV_FONT_MONTSERRAT_12 is not enabled for the widgets demo. Using LV_FONT_DEFAULT instead.");
-#endif
-        }
-
-#if LV_USE_THEME_DEFAULT
         lv_theme_default_init(NULL, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK,
                               font_normal);
-#endif
 
         lv_style_init(&style_text_muted);
         lv_style_set_text_opa(&style_text_muted, LV_OPA_50);
@@ -162,7 +111,7 @@ void lv_dashboard_create(void)
         lv_obj_set_style_border_width(main_panel, 0, 0);
 
         // header_pannel
-        HeaderPanel *header = new HeaderPanel(main_panel);
+        // HeaderPanel *header = new HeaderPanel(main_panel);
 
         // content_pannel
         lv_obj_t *content_panel = lv_obj_create(main_panel);
@@ -181,7 +130,7 @@ void lv_dashboard_create(void)
         // lv_obj_t *t2 = lv_tabview_add_tab(tv, "Profile");
         // lv_obj_t *t3 = lv_tabview_add_tab(tv, "Weather");
 
-        pi_monitor_tab_create(content_panel);
+        // pi_monitor_tab_create_t(content_panel);
         // profile_create(content_panel, disp_size);
         // lv_weather_create(t3);
 }

@@ -1,10 +1,22 @@
 #pragma once
-namespace UI
+class UI
 {
+public:
     // Screen
-    constexpr int SCREEN_WIDTH = 480;
-    constexpr int SCREEN_HEIGHT = 270;
+    static constexpr int SCREEN_WIDTH = 480;
+    static constexpr int SCREEN_HEIGHT = 270;
 
     // Header
-    constexpr int HEADER_HEIGHT = 30;
-}
+    static constexpr int HEADER_HEIGHT = 30;
+
+    // MQTT
+    static constexpr const char *MQTT_SERVER_IP = "192.168.1.210";
+    static constexpr int MQTT_SERVER_PORT = 1883;
+
+    // Topic
+    static constexpr const char *PI_MONITORING_TOPIC = "pi/monitoring";
+
+    // WiFi
+    static constexpr const char *SSID = "";
+    static constexpr const char *PASSWORD = "";
+};

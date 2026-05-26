@@ -24,8 +24,6 @@
  * Enable LVGL Demo Widgets
  * #define LV_USE_DEMO_WIDGETS 1
  ******************************************************************************/
-#include "components/dashboard/ui_dashboard.h"
-#include "components/dashboard/tab_pi_monitor/pi_monitor.h"
 // #define DIRECT_MODE // Uncomment to enable full frame buffer
 
 /*******************************************************************************
@@ -75,6 +73,8 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include "touch.h"
 #include "components/wifi/wifi.h"
 #include "ui_msg.h"
+#include "pages/ui_manager.h"
+#include "pages/pi_monitoring_page/pi_monitoring_page.h"
 
 /* Change to your screen resolution */  
 static uint32_t screenWidth;
@@ -83,6 +83,13 @@ static uint32_t bufSize;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
 static lv_disp_drv_t disp_drv;
+static const lv_font_t *font_large;
+static const lv_font_t *font_normal;
+static disp_size_t disp_size;
+static lv_style_t style_text_muted;
+static lv_style_t style_title;
+static lv_style_t style_icon;
+static lv_style_t style_bullet;
 
 QueueHandle_t uiQueue;
 
@@ -199,7 +206,40 @@ void initialUI()
     indev_drv.read_cb = my_touchpad_read;
     lv_indev_drv_register(&indev_drv);
 
-    lv_dashboard_create();
+    if (LV_HOR_RES <= 320)
+      disp_size = DISP_SMALL;
+    else if (LV_HOR_RES < 720)
+      disp_size = DISP_MEDIUM;
+    else
+      disp_size = DISP_LARGE;
+
+    font_large = LV_FONT_DEFAULT;
+    font_normal = LV_FONT_DEFAULT;
+
+    lv_theme_default_init(NULL, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK,
+                          font_normal);
+
+    // initial style
+    lv_style_init(&style_text_muted);
+    lv_style_set_text_opa(&style_text_muted, LV_OPA_50);
+
+    lv_style_init(&style_title);
+    lv_style_set_text_font(&style_title, font_large);
+
+    lv_style_init(&style_icon);
+    lv_style_set_text_color(&style_icon, lv_theme_get_color_primary(NULL));
+    lv_style_set_text_font(&style_icon, font_large);
+
+    lv_style_init(&style_bullet);
+    lv_style_set_border_width(&style_bullet, 0);
+    lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
+
+    lv_obj_set_style_text_font(lv_scr_act(), font_normal, 0);
+
+    // lv_dashboard_create();
+    // initial screen
+    UIManager uiManager;
+    uiManager.init();
   }
 }
 
@@ -219,9 +259,9 @@ void lvglTask(void *pv)
     if (xQueueReceive(uiQueue, &msg, 0))
     {
       Serial.printf("Received MQTT message: CPU: %d%%, MEM: %d%%, TEMP: %.2f°C\n", msg.cpu, msg.mem, msg.temp);
-      ui_update_cpu(msg.cpu);
-      ui_update_mem(msg.mem);
-      ui_update_temp(msg.temp);
+      PiMonitoringPage::ui_update_cpu(msg.cpu);
+      PiMonitoringPage::ui_update_mem(msg.mem);
+      PiMonitoringPage::ui_update_temp(msg.temp);
     }
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)

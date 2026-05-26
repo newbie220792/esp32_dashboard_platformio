@@ -14,7 +14,7 @@
 class HeaderPanel
 {
 public:
-    HeaderPanel(lv_obj_t *parent);
+    void init(lv_obj_t *parent);
 
     void updateWifiStatus(bool isConnected);
 

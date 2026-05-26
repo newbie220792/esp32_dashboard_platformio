@@ -21,11 +21,11 @@ extern "C"
      * GLOBAL PROTOTYPES
      **********************/
 
-    void pi_monitor_tab_create(lv_obj_t *parent);
+    void pi_monitor_tab_create_t(lv_obj_t *parent);
 
-    void ui_update_cpu(int value);
-    void ui_update_mem(int value);
-    void ui_update_temp(float value);
+    void ui_update_cpu_t(int value);
+    void ui_update_mem_t(int value);
+    void ui_update_temp_t(float value);
 
     /**********************
      *      MACROS

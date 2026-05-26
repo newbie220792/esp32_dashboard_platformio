@@ -33,11 +33,3 @@ void callback(char *topic, byte *payload, unsigned int length)
 
     xQueueSend(uiQueue, &msg, 0);
 }
-
-// typedef struct
-// {
-//     float temp;
-//     int mem;
-//     int cpu;
-
-// } UIMessage;

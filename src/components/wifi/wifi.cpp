@@ -1,29 +1,17 @@
-/**
- * @file wifi.cpp
- *
- */
-
-/*********************
- *      INCLUDES
- *********************/
-#include "sub_mqtt.h"
+#include "components/mqtt/sub_mqtt.h"
 #include "wifi.h"
 #include <Arduino.h>
 #include <WiFi.h>
 // #include <WiFiClient.h>
 #include <PubSubClient.h>
-
-const char *ssid = "";
-const char *password = "";
-const char *mqtt_server = "192.168.1.210";
-const char *topic = "pi/monitoring";
+#include <config/ui_constants.h>
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 void initialWifi(void)
 {
-    WiFi.begin(ssid, password);
+    WiFi.begin(UI::SSID, UI::PASSWORD);
     Serial.println("Wifi connecting....");
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -32,7 +20,7 @@ void initialWifi(void)
     }
     Serial.println(WiFi.localIP());
 
-    client.setServer(mqtt_server, 1883);
+    client.setServer(UI::MQTT_SERVER_IP, UI::MQTT_SERVER_PORT);
     client.setCallback(callback);
 }
 
@@ -49,7 +37,7 @@ void reconnect()
         {
             Serial.println("connected");
 
-            client.subscribe(topic);
+            client.subscribe(UI::PI_MONITORING_TOPIC);
             Serial.println("Subscribed topic");
         }
         else

@@ -1,17 +1,5 @@
+#include "pi_monitoring_page.h"
 
-/**
- * @file pi_monitoring.c
- *
- */
-
-/*********************
- *      INCLUDES
- *********************/
-#include "pi_monitor.h"
-
-/**********************
- *  STATIC VARIABLES
- **********************/
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
 
@@ -20,17 +8,11 @@ static lv_chart_series_t *mem_ser;
 
 static lv_obj_t *cpu_label;
 static lv_obj_t *mem_label;
-static lv_obj_t *temp_label;
 
+static lv_obj_t *temp_label;
 static lv_obj_t *temp_bar;
 
-static lv_obj_t *title;
-
-/**********************
- *  STATIC PROTOTYPES
- **********************/
-
-lv_obj_t *create_chart_t(
+lv_obj_t *create_chart(
     lv_obj_t **chart,
     lv_chart_series_t **ser,
     lv_obj_t **label,
@@ -123,7 +105,7 @@ lv_obj_t *create_chart_t(
     return cont;
 }
 
-lv_obj_t *create_temp_gauge_t(lv_obj_t *parent)
+lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
@@ -177,7 +159,7 @@ lv_obj_t *create_temp_gauge_t(lv_obj_t *parent)
     return cont;
 }
 
-void pi_monitor_tab_create_t(lv_obj_t *parent)
+void PiMonitoringPage::init(lv_obj_t *parent)
 {
     lv_obj_t *panel1 = lv_obj_create(parent);
     lv_obj_set_size(panel1, LV_PCT(100), LV_PCT(100));
@@ -194,7 +176,7 @@ void pi_monitor_tab_create_t(lv_obj_t *parent)
     lv_obj_set_layout(panel1, LV_LAYOUT_GRID);
     lv_obj_set_grid_dsc_array(panel1, chart_col_dsc, chart_row_dsc);
 
-    lv_obj_t *cpu_cont = create_chart_t(
+    lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
         &cpu_ser,
         &cpu_label,
@@ -205,7 +187,7 @@ void pi_monitor_tab_create_t(lv_obj_t *parent)
                          LV_GRID_ALIGN_STRETCH, 0, 1,
                          LV_GRID_ALIGN_STRETCH, 0, 1);
 
-    lv_obj_t *mem_cont = create_chart_t(
+    lv_obj_t *mem_cont = create_chart(
         &mem_chart,
         &mem_ser,
         &mem_label,
@@ -216,13 +198,13 @@ void pi_monitor_tab_create_t(lv_obj_t *parent)
                          LV_GRID_ALIGN_STRETCH, 1, 1,
                          LV_GRID_ALIGN_STRETCH, 0, 1);
 
-    lv_obj_t *temp_cont = create_temp_gauge_t(panel1);
+    lv_obj_t *temp_cont = create_temp_gauge(panel1);
     lv_obj_set_grid_cell(temp_cont,
                          LV_GRID_ALIGN_STRETCH, 0, 2,
                          LV_GRID_ALIGN_STRETCH, 1, 1);
 }
 
-void ui_update_cpu_t(int value)
+void PiMonitoringPage::ui_update_cpu(int value)
 {
     lv_chart_set_next_value(
         cpu_chart,
@@ -235,7 +217,7 @@ void ui_update_cpu_t(int value)
         value);
 }
 
-void ui_update_mem_t(int value)
+void PiMonitoringPage::ui_update_mem(int value)
 {
     lv_chart_set_next_value(
         mem_chart,
@@ -248,7 +230,7 @@ void ui_update_mem_t(int value)
         value);
 }
 
-void ui_update_temp_t(float value)
+void PiMonitoringPage::ui_update_temp(float value)
 {
     lv_bar_set_value(temp_bar, value, LV_ANIM_ON);
 
@@ -265,3 +247,8 @@ void ui_update_temp_t(float value)
              t_dec);
     lv_label_set_text(temp_label, buf);
 }
+
+lv_obj_t *PiMonitoringPage::getContent()
+{
+    return content;
+};
