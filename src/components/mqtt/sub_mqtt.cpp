@@ -8,6 +8,27 @@
      * temp: 30
 }*/
 
+// topic_type_t getTopicType(const char *topic)
+// {
+
+//     if (strcmp(topic, "home/temp") == 0)
+//     {
+//         return TOPIC_TEMP;
+//     }
+
+//     if (strcmp(topic, "home/humidity") == 0)
+//     {
+//         return TOPIC_HUMI;
+//     }
+
+//     if (strcmp(topic, "home/status") == 0)
+//     {
+//         return TOPIC_STATUS;
+//     }
+
+//     return TOPIC_UNKNOWN;
+// }
+
 void callback(char *topic, byte *payload, unsigned int length)
 {
     Serial.print("Topic: ");

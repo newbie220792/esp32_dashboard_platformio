@@ -254,8 +254,6 @@ void lvglTask(void *pv)
 
   while (1)
   {
-    lv_timer_handler();
-
     if (xQueueReceive(uiQueue, &msg, 0))
     {
       Serial.printf("Received MQTT message: CPU: %d%%, MEM: %d%%, TEMP: %.2f°C\n", msg.cpu, msg.mem, msg.temp);
@@ -263,6 +261,8 @@ void lvglTask(void *pv)
       PiMonitoringPage::ui_update_mem(msg.mem);
       PiMonitoringPage::ui_update_temp(msg.temp);
     }
+    lv_timer_handler();
+
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)
     gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);

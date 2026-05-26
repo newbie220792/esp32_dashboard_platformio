@@ -16,15 +16,15 @@ class HeaderPanel
 public:
     void init(lv_obj_t *parent);
 
-    void updateWifiStatus(bool isConnected);
+    static void updateWifiStatus(bool isConnected);
 
-    void updateCurrentTime(const char *currentTime);
+    static void updateCurrentTime(const char *currentTime);
 
     lv_obj_t *getPanel();
 
 private:
-    lv_obj_t *time_label;
-    lv_obj_t *wifi_label;
+    static lv_obj_t *time_label;
+    static lv_obj_t *wifi_label;
     lv_obj_t *header_panel;
 };
 #endif
