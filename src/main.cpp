@@ -71,7 +71,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
  * Please config the touch panel in touch.h
  ******************************************************************************/
 #include "touch.h"
-#include "components/wifi/wifi.h"
+#include "services/wifi/wifi.h"
 #include "ui_msg.h"
 #include "pages/ui_manager.h"
 #include "pages/pi_monitoring_page/pi_monitoring_page.h"

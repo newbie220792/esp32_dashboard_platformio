@@ -1,4 +1,4 @@
-#include "pages/profile/profile.h"
+#include "img_demo_widgets_avatar.h"
 
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN

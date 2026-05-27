@@ -1,9 +1,5 @@
 #pragma once
 
-// #include <WiFi.h>
-// #include <PubSubClient.h>
-// #include <Arduino.h>
-
 #ifdef __cplusplus
 extern "C"
 {

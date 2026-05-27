@@ -12,5 +12,5 @@ public:
 private:
     lv_obj_t *content;
     lv_obj_t *title;
-    disp_size_t disp_size = DISP_MEDIUM;
+    disp_size_t disp_size;
 };

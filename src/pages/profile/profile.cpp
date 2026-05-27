@@ -1,17 +1,17 @@
 #include "profile.h"
+#include "assets/images/img_demo_widgets_avatar.h"
 
-static lv_obj_t *tv;
 static lv_style_t style_text_muted;
 static lv_style_t style_title;
 static lv_style_t style_icon;
-static lv_style_t style_bullet;
 
 void ProfilePage::init(lv_obj_t *parent)
 {
     content = lv_obj_create(parent);
     lv_obj_set_height(content, LV_SIZE_CONTENT);
 
-    LV_IMG_DECLARE(img_demo_widgets_avatar);
+    // LV_IMG_DECLARE(img_lvgl_logo);
+    // LV_IMG_DECLARE(&img_demo_widgets_avatar);
     lv_obj_t *avatar = lv_img_create(content);
     lv_img_set_src(avatar, &img_demo_widgets_avatar);
 
