@@ -161,8 +161,8 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 
 void PiMonitoringPage::init(lv_obj_t *parent)
 {
-    lv_obj_t *panel1 = lv_obj_create(parent);
-    lv_obj_set_size(panel1, LV_PCT(100), LV_PCT(100));
+    content = lv_obj_create(parent);
+    lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
 
     static lv_coord_t chart_col_dsc[] = {
         LV_GRID_FR(1), // 50%
@@ -173,14 +173,14 @@ void PiMonitoringPage::init(lv_obj_t *parent)
         LV_GRID_FR(1), // hàng trên
         LV_GRID_FR(1), // hàng dưới
         LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_layout(panel1, LV_LAYOUT_GRID);
-    lv_obj_set_grid_dsc_array(panel1, chart_col_dsc, chart_row_dsc);
+    lv_obj_set_layout(content, LV_LAYOUT_GRID);
+    lv_obj_set_grid_dsc_array(content, chart_col_dsc, chart_row_dsc);
 
     lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
         &cpu_ser,
         &cpu_label,
-        panel1,
+        content,
         "CPU",
         lv_color_hex(0x00D0FF));
     lv_obj_set_grid_cell(cpu_cont,
@@ -191,14 +191,14 @@ void PiMonitoringPage::init(lv_obj_t *parent)
         &mem_chart,
         &mem_ser,
         &mem_label,
-        panel1,
+        content,
         "MEMORY",
         lv_color_hex(0x00E676));
     lv_obj_set_grid_cell(mem_cont,
                          LV_GRID_ALIGN_STRETCH, 1, 1,
                          LV_GRID_ALIGN_STRETCH, 0, 1);
 
-    lv_obj_t *temp_cont = create_temp_gauge(panel1);
+    lv_obj_t *temp_cont = create_temp_gauge(content);
     lv_obj_set_grid_cell(temp_cont,
                          LV_GRID_ALIGN_STRETCH, 0, 2,
                          LV_GRID_ALIGN_STRETCH, 1, 1);

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <lvgl.h>
-class WeatherPage
+#include "disp_size_t.h"
+
+class ProfilePage
 {
 public:
     void init(lv_obj_t *parent);
@@ -10,4 +12,5 @@ public:
 private:
     lv_obj_t *content;
     lv_obj_t *title;
+    disp_size_t disp_size = DISP_MEDIUM;
 };

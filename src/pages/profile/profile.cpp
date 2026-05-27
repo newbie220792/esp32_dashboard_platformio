@@ -1,100 +1,51 @@
-/**
- * @file profile.c
- *
- */
+#include "profile.h"
 
-/*********************
- *      INCLUDES
- *********************/
-
-#include "tab_profile.h"
-// #include "lv_keyboard.h"
-
-// static disp_size_t disp_size;
 static lv_obj_t *tv;
 static lv_style_t style_text_muted;
 static lv_style_t style_title;
 static lv_style_t style_icon;
 static lv_style_t style_bullet;
 
-/**********************
- *  STATIC PROTOTYPES
- **********************/
-static void ta_event_cb(lv_event_t *e);
-
-static void ta_event_cb(lv_event_t *e)
+void ProfilePage::init(lv_obj_t *parent)
 {
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *ta = lv_event_get_target(e);
-    lv_obj_t *kb = (lv_obj_t *)lv_event_get_user_data(e);
-    if (code == LV_EVENT_FOCUSED)
-    {
-        if (lv_indev_get_type(lv_indev_get_act()) != LV_INDEV_TYPE_KEYPAD)
-        {
-            lv_keyboard_set_textarea(kb, ta);
-            lv_obj_set_style_max_height(kb, LV_HOR_RES * 2 / 3, 0);
-            lv_obj_update_layout(tv); /*Be sure the sizes are recalculated*/
-            lv_obj_set_height(tv, LV_VER_RES - lv_obj_get_height(kb));
-            lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_scroll_to_view_recursive(ta, LV_ANIM_OFF);
-        }
-    }
-    else if (code == LV_EVENT_DEFOCUSED)
-    {
-        lv_keyboard_set_textarea(kb, NULL);
-        lv_obj_set_height(tv, LV_VER_RES);
-        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-        lv_indev_reset(NULL, ta);
-    }
-    else if (code == LV_EVENT_READY || code == LV_EVENT_CANCEL)
-    {
-        lv_obj_set_height(tv, LV_VER_RES);
-        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_state(ta, LV_STATE_FOCUSED);
-        lv_indev_reset(NULL, ta); /*To forget the last clicked object to make it focusable again*/
-    }
-}
-
-void profile_create(lv_obj_t *parent, disp_size_t disp_size)
-{
-    lv_obj_t *panel1 = lv_obj_create(parent);
-    lv_obj_set_height(panel1, LV_SIZE_CONTENT);
+    content = lv_obj_create(parent);
+    lv_obj_set_height(content, LV_SIZE_CONTENT);
 
     LV_IMG_DECLARE(img_demo_widgets_avatar);
-    lv_obj_t *avatar = lv_img_create(panel1);
+    lv_obj_t *avatar = lv_img_create(content);
     lv_img_set_src(avatar, &img_demo_widgets_avatar);
 
-    lv_obj_t *name = lv_label_create(panel1);
+    lv_obj_t *name = lv_label_create(content);
     lv_label_set_text(name, "Elena Smith");
     lv_obj_add_style(name, &style_title, 0);
 
-    lv_obj_t *dsc = lv_label_create(panel1);
+    lv_obj_t *dsc = lv_label_create(content);
     lv_obj_add_style(dsc, &style_text_muted, 0);
     lv_label_set_text(dsc, "This is a short description of me. Take a look at my profile!");
     lv_label_set_long_mode(dsc, LV_LABEL_LONG_WRAP);
 
-    lv_obj_t *email_icn = lv_label_create(panel1);
+    lv_obj_t *email_icn = lv_label_create(content);
     lv_obj_add_style(email_icn, &style_icon, 0);
     lv_label_set_text(email_icn, LV_SYMBOL_ENVELOPE);
 
-    lv_obj_t *email_label = lv_label_create(panel1);
+    lv_obj_t *email_label = lv_label_create(content);
     lv_label_set_text(email_label, "elena@smith.com");
 
-    lv_obj_t *call_icn = lv_label_create(panel1);
+    lv_obj_t *call_icn = lv_label_create(content);
     lv_obj_add_style(call_icn, &style_icon, 0);
     lv_label_set_text(call_icn, LV_SYMBOL_CALL);
 
-    lv_obj_t *call_label = lv_label_create(panel1);
+    lv_obj_t *call_label = lv_label_create(content);
     lv_label_set_text(call_label, "+79 246 123 4567");
 
-    lv_obj_t *log_out_btn = lv_btn_create(panel1);
+    lv_obj_t *log_out_btn = lv_btn_create(content);
     lv_obj_set_height(log_out_btn, LV_SIZE_CONTENT);
 
     lv_obj_t *label = lv_label_create(log_out_btn);
     lv_label_set_text(label, "Log out");
     lv_obj_center(label);
 
-    lv_obj_t *invite_btn = lv_btn_create(panel1);
+    lv_obj_t *invite_btn = lv_btn_create(content);
     lv_obj_add_state(invite_btn, LV_STATE_DISABLED);
     lv_obj_set_height(invite_btn, LV_SIZE_CONTENT);
 
@@ -197,9 +148,9 @@ void profile_create(lv_obj_t *parent, disp_size_t disp_size)
 
         lv_obj_set_grid_dsc_array(parent, grid_main_col_dsc, grid_main_row_dsc);
 
-        lv_obj_set_grid_cell(panel1, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_CENTER, 0, 1);
+        lv_obj_set_grid_cell(content, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_CENTER, 0, 1);
 
-        lv_obj_set_grid_dsc_array(panel1, grid_1_col_dsc, grid_1_row_dsc);
+        lv_obj_set_grid_dsc_array(content, grid_1_col_dsc, grid_1_row_dsc);
         lv_obj_set_grid_cell(avatar, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_CENTER, 0, 5);
         lv_obj_set_grid_cell(name, LV_GRID_ALIGN_START, 2, 2, LV_GRID_ALIGN_CENTER, 0, 1);
         lv_obj_set_grid_cell(dsc, LV_GRID_ALIGN_STRETCH, 2, 4, LV_GRID_ALIGN_START, 1, 1);
@@ -263,12 +214,12 @@ void profile_create(lv_obj_t *parent, disp_size_t disp_size)
             LV_GRID_TEMPLATE_LAST};
 
         lv_obj_set_grid_dsc_array(parent, grid_main_col_dsc, grid_main_row_dsc);
-        lv_obj_set_grid_cell(panel1, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_CENTER, 0, 1);
+        lv_obj_set_grid_cell(content, LV_GRID_ALIGN_STRETCH, 0, 2, LV_GRID_ALIGN_CENTER, 0, 1);
 
         lv_obj_set_width(log_out_btn, 120);
         lv_obj_set_width(invite_btn, 120);
 
-        lv_obj_set_grid_dsc_array(panel1, grid_1_col_dsc, grid_1_row_dsc);
+        lv_obj_set_grid_dsc_array(content, grid_1_col_dsc, grid_1_row_dsc);
         lv_obj_set_grid_cell(avatar, LV_GRID_ALIGN_CENTER, 0, 1, LV_GRID_ALIGN_START, 0, 4);
         lv_obj_set_grid_cell(name, LV_GRID_ALIGN_START, 2, 2, LV_GRID_ALIGN_CENTER, 0, 1);
         lv_obj_set_grid_cell(dsc, LV_GRID_ALIGN_STRETCH, 2, 2, LV_GRID_ALIGN_START, 1, 1);
@@ -318,7 +269,7 @@ void profile_create(lv_obj_t *parent, disp_size_t disp_size)
                                               LV_GRID_CONTENT, /*Button2*/
                                               LV_GRID_TEMPLATE_LAST};
 
-        lv_obj_set_grid_dsc_array(panel1, grid_1_col_dsc, grid_1_row_dsc);
+        lv_obj_set_grid_dsc_array(content, grid_1_col_dsc, grid_1_row_dsc);
 
         static lv_coord_t grid_2_col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
         static lv_coord_t grid_2_row_dsc[] = {
@@ -337,7 +288,7 @@ void profile_create(lv_obj_t *parent, disp_size_t disp_size)
         lv_obj_set_grid_dsc_array(panel2, grid_2_col_dsc, grid_2_row_dsc);
         lv_obj_set_grid_dsc_array(panel3, grid_2_col_dsc, grid_2_row_dsc);
 
-        lv_obj_set_grid_cell(panel1, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+        lv_obj_set_grid_cell(content, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_CENTER, 0, 1);
 
         lv_obj_set_style_text_align(dsc, LV_TEXT_ALIGN_CENTER, 0);
 
@@ -372,4 +323,9 @@ void profile_create(lv_obj_t *parent, disp_size_t disp_size)
         lv_obj_set_grid_cell(team_player_label, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_START, 4, 1);
         lv_obj_set_grid_cell(sw2, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_START, 5, 1);
     }
-}
+};
+
+lv_obj_t *ProfilePage::getContent()
+{
+    return content;
+};

@@ -23,8 +23,6 @@ public:
     lv_obj_t *getPanel();
 
 private:
-    static lv_obj_t *time_label;
-    static lv_obj_t *wifi_label;
     lv_obj_t *header_panel;
 };
 #endif

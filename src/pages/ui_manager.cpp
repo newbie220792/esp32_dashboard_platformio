@@ -30,10 +30,6 @@ void UIManager::init()
 
     // testing loading page
     loadingPage(ScreenId::HOME_PAGE);
-    delay(3);
-    loadingPage(ScreenId::WEATHER_PAGE);
-    delay(3);
-    loadingPage(ScreenId::PI_MONITORING_PAGE);
 };
 
 void UIManager::loadingPage(ScreenId screenId)

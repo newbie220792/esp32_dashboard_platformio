@@ -1,4 +1,4 @@
-#include "components/dashboard/tab_profile/tab_profile.h"
+#include "pages/profile/profile.h"
 
 #ifndef LV_ATTRIBUTE_MEM_ALIGN
 #define LV_ATTRIBUTE_MEM_ALIGN

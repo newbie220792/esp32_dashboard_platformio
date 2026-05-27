@@ -2,6 +2,9 @@
 #include <config/colors.h>
 #include <config/ui_constants.h>
 
+static lv_obj_t *time_label;
+static lv_obj_t *wifi_label;
+
 void HeaderPanel::init(lv_obj_t *parent)
 {
     header_panel = lv_obj_create(parent);

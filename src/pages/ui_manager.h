@@ -5,7 +5,7 @@
 #include <map>
 #include "pages/home_page/home_page.h"
 #include "pages/weather_page/weather_page.h"
-#include "components/dashboard/header_panel/header.h"
+#include "components/header_panel/header.h"
 #include "disp_size_t.h"
 
 class UIManager
@@ -13,7 +13,6 @@ class UIManager
 public:
     void init();
     void loadingPage(ScreenId screenId);
-    // lv_obj_t *getActiveScreen();
 
 private:
     HeaderPanel header;
