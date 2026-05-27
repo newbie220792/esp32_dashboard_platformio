@@ -19,6 +19,10 @@ AppEventType getAppEventType(const char *topic)
     {
         return AppEventType::PI_TEMP;
     }
+    if (strcmp(topic, Topics::Subscribe::SYS_TIME) == 0)
+    {
+        return AppEventType::SYS_TIME;
+    }
 
     return AppEventType::UNKNOW;
 }

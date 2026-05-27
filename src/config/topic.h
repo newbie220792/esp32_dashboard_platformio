@@ -8,11 +8,13 @@ namespace Topics
         static constexpr const char *PI_CPU = "pi/cpu";
         static constexpr const char *PI_MEM = "pi/mem";
         static constexpr const char *PI_TEMP = "pi/temp";
+        static constexpr const char *SYS_TIME = "sys/time";
 
         static constexpr const char *ALL[] =
             {PI_CPU,
              PI_MEM,
-             PI_TEMP};
+             PI_TEMP,
+             SYS_TIME};
 
         static constexpr size_t COUNT = sizeof(ALL) / sizeof(ALL[0]);
     };

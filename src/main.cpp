@@ -267,7 +267,6 @@ void lvglTask(void *pv)
       }
       case AppEventType::PI_CPU:
       {
-
         char *cpu_percent = appEvent.data;
         int cpu = strtol(cpu_percent, nullptr, 0);
         PiMonitoringPage::ui_update_cpu(cpu);
@@ -275,7 +274,6 @@ void lvglTask(void *pv)
       }
       case AppEventType::PI_MEM:
       {
-
         char *mem_percent = appEvent.data;
         int mem = strtol(mem_percent, nullptr, 0);
         PiMonitoringPage::ui_update_mem(mem);
@@ -287,9 +285,14 @@ void lvglTask(void *pv)
         PiMonitoringPage::ui_update_temp(temp);
         break;
       }
+      case AppEventType::SYS_TIME:
+      {
+        char *currentTime = appEvent.data;
+        HeaderPanel::updateCurrentTime(currentTime);
+        break;
+      }
       default:
       {
-
         Serial.println("Error: Invalid app event type");
         break;
       }
@@ -335,13 +338,12 @@ void wifiTask(void *pv)
       case MessageEventType::MQTT_MESSAGE:
       {
         const char *topic = messageEvent.topic;
-        char *payload = messageEvent.payload;
+        const char *payload = messageEvent.payload;
         pushMessage(topic, payload);
         break;
       }
       default:
       {
-
         Serial.println("Invalid message type");
         break;
       }

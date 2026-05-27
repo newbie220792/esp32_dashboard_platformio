@@ -33,8 +33,8 @@ void UIManager::init()
     pages[(int)ScreenId::WEATHER_PAGE] = weatherPage.getContent();
     pages[(int)ScreenId::PI_MONITORING_PAGE] = piMonitoringPage.getContent();
 
-    Serial.print("Loading pages: ");
-    Serial.println((int)pages[ScreenId::COUNT]);
+    // Serial.print("Loading pages: ");
+    // Serial.println((int)pages[ScreenId::COUNT]);
 
     // testing loading page
     loadingPage(ScreenId::PI_MONITORING_PAGE);

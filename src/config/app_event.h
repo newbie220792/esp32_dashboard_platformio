@@ -2,10 +2,10 @@ enum class AppEventType
 {
     WIFI_CONNECTED,
     WIFI_DISCONNECTED,
-    MQTT_MESSAGE,
     PI_CPU,
     PI_MEM,
     PI_TEMP,
+    SYS_TIME,
     UNKNOW,
 };
 
