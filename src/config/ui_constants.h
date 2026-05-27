@@ -13,9 +13,6 @@ public:
     static constexpr const char *MQTT_SERVER_IP = "192.168.1.210";
     static constexpr int MQTT_SERVER_PORT = 1883;
 
-    // Topic
-    static constexpr const char *PI_MONITORING_TOPIC = "pi/monitoring";
-
     // WiFi
     static constexpr const char *SSID = "";
     static constexpr const char *PASSWORD = "";

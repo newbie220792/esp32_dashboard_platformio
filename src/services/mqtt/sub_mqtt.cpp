@@ -1,56 +1,42 @@
 #include "sub_mqtt.h"
+#include <config/app_event.h>
+#include "app_queues.h"
+#include <config/topic.h>
 
-// IP Raspberry Pi chạy Mosquitto
+AppEventType getAppEventType(const char *topic)
+{
+    if (strcmp(topic, Topics::Subscribe::PI_CPU) == 0)
+    {
+        return AppEventType::PI_CPU;
+    }
 
-/**payload = {
-     * cpu: 10,
-     * mem: 10,
-     * temp: 30
-}*/
+    if (strcmp(topic, Topics::Subscribe::PI_MEM) == 0)
+    {
+        return AppEventType::PI_MEM;
+    }
 
-// topic_type_t getTopicType(const char *topic)
-// {
+    if (strcmp(topic, Topics::Subscribe::PI_TEMP) == 0)
+    {
+        return AppEventType::PI_TEMP;
+    }
 
-//     if (strcmp(topic, "home/temp") == 0)
-//     {
-//         return TOPIC_TEMP;
-//     }
-
-//     if (strcmp(topic, "home/humidity") == 0)
-//     {
-//         return TOPIC_HUMI;
-//     }
-
-//     if (strcmp(topic, "home/status") == 0)
-//     {
-//         return TOPIC_STATUS;
-//     }
-
-//     return TOPIC_UNKNOWN;
-// }
+    return AppEventType::UNKNOW;
+}
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
-    Serial.print("Topic: ");
-    Serial.println(topic);
-
     JsonDocument doc;
-
     DeserializationError error = deserializeJson(doc, payload, length);
 
     if (error)
     {
         Serial.print("JSON parse failed: ");
         Serial.println(error.c_str());
-        return;
     }
 
-    UIMessage msg;
+    AppEvent appEvent;
 
-    // lấy value
-    msg.cpu = doc["cpu"] | 0;
-    msg.mem = doc["mem"] | 0;
-    msg.temp = doc["temp"] | 0.0;
-
-    xQueueSend(uiQueue, &msg, 0);
+    appEvent.type = getAppEventType(topic);
+    appEvent.data = (char *)payload;
+    xQueueSend(uiQueue, &appEvent, 0);
 }

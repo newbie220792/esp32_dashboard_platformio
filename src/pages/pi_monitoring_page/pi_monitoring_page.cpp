@@ -1,4 +1,8 @@
 #include "pi_monitoring_page.h"
+#include "app_queues.h"
+#include <config/message_event.h>
+#include <config/topic.h>
+#include <Arduino.h>
 
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
@@ -159,6 +163,19 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     return cont;
 }
 
+static void btn_event_handle(lv_event_t *e)
+{
+
+    MessageEvent messageEvent;
+
+    messageEvent.type = MessageEventType::MQTT_MESSAGE;
+    messageEvent.topic = Topics::Publish::HOME_LIGHT;
+    messageEvent.payload = "ON";
+
+    xQueueSend(mqttQueue, &messageEvent, 0);
+    Serial.println("Turn on light!!");
+}
+
 void PiMonitoringPage::init(lv_obj_t *parent)
 {
     content = lv_obj_create(parent);
@@ -202,6 +219,15 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     lv_obj_set_grid_cell(temp_cont,
                          LV_GRID_ALIGN_STRETCH, 0, 2,
                          LV_GRID_ALIGN_STRETCH, 1, 1);
+
+    // button test
+    lv_obj_t *btn_test = lv_btn_create(content);
+    lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_ALL, NULL);
+    lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
+
+    lv_obj_t *label = lv_label_create(btn_test);
+    lv_label_set_text(label, "Button");
+    lv_obj_center(label);
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)

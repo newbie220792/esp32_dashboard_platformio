@@ -4,6 +4,9 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <config/ui_constants.h>
+#include <config/topic.h>
+#include <config/app_event.h>
+#include "app_queues.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -18,6 +21,11 @@ void initialWifi(void)
         vTaskDelay(pdMS_TO_TICKS(500));
     }
     Serial.println(WiFi.localIP());
+
+    AppEvent appEvent;
+    appEvent.type = AppEventType::WIFI_CONNECTED;
+
+    xQueueSend(uiQueue, &appEvent, 0);
 
     client.setServer(UI::MQTT_SERVER_IP, UI::MQTT_SERVER_PORT);
     client.setCallback(callback);
@@ -36,8 +44,13 @@ void reconnect()
         {
             Serial.println("connected");
 
-            client.subscribe(UI::PI_MONITORING_TOPIC);
-            Serial.println("Subscribed topic");
+            Serial.println("Subscribed topic: ");
+            for (size_t i = 0; i < Topics::Subscribe::COUNT; i++)
+            {
+                client.subscribe(Topics::Subscribe::ALL[i]);
+                Serial.print(Topics::Subscribe::ALL[i]);
+                Serial.print(", ");
+            }
         }
         else
         {
@@ -48,4 +61,22 @@ void reconnect()
         }
     }
     client.loop();
+}
+
+void pushMessage(const char *topic, char *payload)
+{
+    if (client.connected())
+    {
+        client.publish(topic, payload);
+        Serial.print("Publish message ");
+        Serial.print(payload);
+        Serial.print(" to ");
+        Serial.print(topic);
+        Serial.println(" success!!");
+    }
+    else
+    {
+        Serial.println("Client was not connectd to mqtt server!!!");
+        return;
+    }
 }
