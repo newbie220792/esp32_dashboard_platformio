@@ -16,6 +16,4 @@ public:
 private:
     lv_obj_t *content;
     lv_obj_t *title;
-
-    // lv_obj_t *temp_label;
 };

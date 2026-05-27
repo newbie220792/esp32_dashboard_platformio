@@ -3,6 +3,7 @@
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
+#include <pages/ui_manager.h>
 
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
@@ -176,6 +177,11 @@ static void btn_event_handle(lv_event_t *e)
     Serial.println("Turn on light!!");
 }
 
+static void btn_navigator_handle(lv_event_t *e)
+{
+    UIManager::loadingPage(ScreenId::HOME_PAGE);
+}
+
 void PiMonitoringPage::init(lv_obj_t *parent)
 {
     content = lv_obj_create(parent);
@@ -225,9 +231,20 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_ALL, NULL);
     lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
 
-    lv_obj_t *label = lv_label_create(btn_test);
-    lv_label_set_text(label, "Button");
-    lv_obj_center(label);
+    lv_obj_t *labelTest = lv_label_create(btn_test);
+    lv_label_set_text(labelTest, "Button");
+    lv_obj_center(labelTest);
+
+    // button navigate to home
+    lv_obj_t *btn_navigator = lv_btn_create(content);
+    lv_obj_add_event_cb(btn_test, btn_navigator_handle, LV_EVENT_ALL, NULL);
+    lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t *labelNavigator = lv_label_create(btn_test);
+    lv_label_set_text(labelNavigator, "To Home");
+    lv_obj_center(labelNavigator);
+
+    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)
