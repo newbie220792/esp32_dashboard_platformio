@@ -24,8 +24,6 @@
  * Enable LVGL Demo Widgets
  * #define LV_USE_DEMO_WIDGETS 1
  ******************************************************************************/
-#include "components/dashboard/ui_dashboard.h"
-#include "components/dashboard/tab_pi_monitor/pi_monitor.h"
 // #define DIRECT_MODE // Uncomment to enable full frame buffer
 
 /*******************************************************************************
@@ -73,8 +71,11 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
  * Please config the touch panel in touch.h
  ******************************************************************************/
 #include "touch.h"
-#include "components/wifi/wifi.h"
-#include "ui_msg.h"
+#include "services/wifi/wifi.h"
+#include "pages/ui_manager.h"
+#include "pages/pi_monitoring_page/pi_monitoring_page.h"
+#include <config/app_event.h>
+#include <config/message_event.h>
 
 /* Change to your screen resolution */  
 static uint32_t screenWidth;
@@ -83,8 +84,16 @@ static uint32_t bufSize;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t *disp_draw_buf;
 static lv_disp_drv_t disp_drv;
+static const lv_font_t *font_large;
+static const lv_font_t *font_normal;
+static disp_size_t disp_size;
+static lv_style_t style_text_muted;
+static lv_style_t style_title;
+static lv_style_t style_icon;
+static lv_style_t style_bullet;
 
 QueueHandle_t uiQueue;
+QueueHandle_t mqttQueue;
 
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -199,7 +208,40 @@ void initialUI()
     indev_drv.read_cb = my_touchpad_read;
     lv_indev_drv_register(&indev_drv);
 
-    lv_dashboard_create();
+    if (LV_HOR_RES <= 320)
+      disp_size = DISP_SMALL;
+    else if (LV_HOR_RES < 720)
+      disp_size = DISP_MEDIUM;
+    else
+      disp_size = DISP_LARGE;
+
+    font_large = LV_FONT_DEFAULT;
+    font_normal = LV_FONT_DEFAULT;
+
+    lv_theme_default_init(NULL, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK,
+                          font_normal);
+
+    // initial style
+    lv_style_init(&style_text_muted);
+    lv_style_set_text_opa(&style_text_muted, LV_OPA_50);
+
+    lv_style_init(&style_title);
+    lv_style_set_text_font(&style_title, font_large);
+
+    lv_style_init(&style_icon);
+    lv_style_set_text_color(&style_icon, lv_theme_get_color_primary(NULL));
+    lv_style_set_text_font(&style_icon, font_large);
+
+    lv_style_init(&style_bullet);
+    lv_style_set_border_width(&style_bullet, 0);
+    lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
+
+    lv_obj_set_style_text_font(lv_scr_act(), font_normal, 0);
+
+    // lv_dashboard_create();
+    // initial screen
+    UIManager uiManager;
+    uiManager.init();
   }
 }
 
@@ -210,19 +252,51 @@ void initialUI()
 
 void lvglTask(void *pv)
 {
-  UIMessage msg;
+  AppEvent appEvent;
 
   while (1)
   {
+    if (xQueueReceive(uiQueue, &appEvent, 0))
+    {
+      switch (appEvent.type)
+      {
+      case AppEventType::WIFI_CONNECTED:
+      {
+        HeaderPanel::updateWifiStatus(true);
+        break;
+      }
+      case AppEventType::PI_CPU:
+      {
+
+        char *cpu_percent = appEvent.data;
+        int cpu = strtol(cpu_percent, nullptr, 0);
+        PiMonitoringPage::ui_update_cpu(cpu);
+        break;
+      }
+      case AppEventType::PI_MEM:
+      {
+
+        char *mem_percent = appEvent.data;
+        int mem = strtol(mem_percent, nullptr, 0);
+        PiMonitoringPage::ui_update_mem(mem);
+        break;
+      }
+      case AppEventType::PI_TEMP:
+      {
+        float temp = strtol(appEvent.data, nullptr, 0);
+        PiMonitoringPage::ui_update_temp(temp);
+        break;
+      }
+      default:
+      {
+
+        Serial.println("Error: Invalid app event type");
+        break;
+      }
+      }
+    }
     lv_timer_handler();
 
-    if (xQueueReceive(uiQueue, &msg, 0))
-    {
-      Serial.printf("Received MQTT message: CPU: %d%%, MEM: %d%%, TEMP: %.2f°C\n", msg.cpu, msg.mem, msg.temp);
-      ui_update_cpu(msg.cpu);
-      ui_update_mem(msg.mem);
-      ui_update_temp(msg.temp);
-    }
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)
     gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
@@ -247,10 +321,33 @@ void wifiTask(void *pv)
 {
   vTaskDelay(pdMS_TO_TICKS(2000));
   initialWifi();
+  MessageEvent messageEvent;
 
   while (1)
   {
     reconnect();
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    if (xQueueReceive(mqttQueue, &messageEvent, 0))
+    {
+      switch (messageEvent.type)
+      {
+      case MessageEventType::MQTT_MESSAGE:
+      {
+        const char *topic = messageEvent.topic;
+        char *payload = messageEvent.payload;
+        pushMessage(topic, payload);
+        break;
+      }
+      default:
+      {
+
+        Serial.println("Invalid message type");
+        break;
+      }
+      }
+    }
+
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
@@ -261,7 +358,8 @@ void setup()
   Serial.println("Arduino_GFX LVGL Widgets example");
 
   initialUI();
-  uiQueue = xQueueCreate(5, sizeof(UIMessage));
+  uiQueue = xQueueCreate(5, sizeof(AppEvent));
+  mqttQueue = xQueueCreate(5, sizeof(MessageEvent));
 
   // =========================
   // TASKS

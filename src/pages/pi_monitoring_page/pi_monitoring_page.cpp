@@ -1,17 +1,9 @@
+#include "pi_monitoring_page.h"
+#include "app_queues.h"
+#include <config/message_event.h>
+#include <config/topic.h>
+#include <Arduino.h>
 
-/**
- * @file pi_monitoring.c
- *
- */
-
-/*********************
- *      INCLUDES
- *********************/
-#include "pi_monitor.h"
-
-/**********************
- *  STATIC VARIABLES
- **********************/
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
 
@@ -20,15 +12,9 @@ static lv_chart_series_t *mem_ser;
 
 static lv_obj_t *cpu_label;
 static lv_obj_t *mem_label;
+
 static lv_obj_t *temp_label;
-
 static lv_obj_t *temp_bar;
-
-static lv_obj_t *title;
-
-/**********************
- *  STATIC PROTOTYPES
- **********************/
 
 lv_obj_t *create_chart(
     lv_obj_t **chart,
@@ -177,10 +163,23 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     return cont;
 }
 
-void pi_monitor_tab_create(lv_obj_t *parent)
+static void btn_event_handle(lv_event_t *e)
 {
-    lv_obj_t *panel1 = lv_obj_create(parent);
-    lv_obj_set_size(panel1, LV_PCT(100), LV_PCT(100));
+
+    MessageEvent messageEvent;
+
+    messageEvent.type = MessageEventType::MQTT_MESSAGE;
+    messageEvent.topic = Topics::Publish::HOME_LIGHT;
+    messageEvent.payload = "ON";
+
+    xQueueSend(mqttQueue, &messageEvent, 0);
+    Serial.println("Turn on light!!");
+}
+
+void PiMonitoringPage::init(lv_obj_t *parent)
+{
+    content = lv_obj_create(parent);
+    lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
 
     static lv_coord_t chart_col_dsc[] = {
         LV_GRID_FR(1), // 50%
@@ -191,14 +190,14 @@ void pi_monitor_tab_create(lv_obj_t *parent)
         LV_GRID_FR(1), // hàng trên
         LV_GRID_FR(1), // hàng dưới
         LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_layout(panel1, LV_LAYOUT_GRID);
-    lv_obj_set_grid_dsc_array(panel1, chart_col_dsc, chart_row_dsc);
+    lv_obj_set_layout(content, LV_LAYOUT_GRID);
+    lv_obj_set_grid_dsc_array(content, chart_col_dsc, chart_row_dsc);
 
     lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
         &cpu_ser,
         &cpu_label,
-        panel1,
+        content,
         "CPU",
         lv_color_hex(0x00D0FF));
     lv_obj_set_grid_cell(cpu_cont,
@@ -209,20 +208,29 @@ void pi_monitor_tab_create(lv_obj_t *parent)
         &mem_chart,
         &mem_ser,
         &mem_label,
-        panel1,
+        content,
         "MEMORY",
         lv_color_hex(0x00E676));
     lv_obj_set_grid_cell(mem_cont,
                          LV_GRID_ALIGN_STRETCH, 1, 1,
                          LV_GRID_ALIGN_STRETCH, 0, 1);
 
-    lv_obj_t *temp_cont = create_temp_gauge(panel1);
+    lv_obj_t *temp_cont = create_temp_gauge(content);
     lv_obj_set_grid_cell(temp_cont,
                          LV_GRID_ALIGN_STRETCH, 0, 2,
                          LV_GRID_ALIGN_STRETCH, 1, 1);
+
+    // button test
+    lv_obj_t *btn_test = lv_btn_create(content);
+    lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_ALL, NULL);
+    lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
+
+    lv_obj_t *label = lv_label_create(btn_test);
+    lv_label_set_text(label, "Button");
+    lv_obj_center(label);
 }
 
-void ui_update_cpu(int value)
+void PiMonitoringPage::ui_update_cpu(int value)
 {
     lv_chart_set_next_value(
         cpu_chart,
@@ -235,7 +243,7 @@ void ui_update_cpu(int value)
         value);
 }
 
-void ui_update_mem(int value)
+void PiMonitoringPage::ui_update_mem(int value)
 {
     lv_chart_set_next_value(
         mem_chart,
@@ -248,7 +256,7 @@ void ui_update_mem(int value)
         value);
 }
 
-void ui_update_temp(float value)
+void PiMonitoringPage::ui_update_temp(float value)
 {
     lv_bar_set_value(temp_bar, value, LV_ANIM_ON);
 
@@ -265,3 +273,8 @@ void ui_update_temp(float value)
              t_dec);
     lv_label_set_text(temp_label, buf);
 }
+
+lv_obj_t *PiMonitoringPage::getContent()
+{
+    return content;
+};

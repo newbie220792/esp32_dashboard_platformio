@@ -1,10 +1,4 @@
-
-/**
- * @file tab_weather.cpp
- *
- */
-
-#include "tab_weather.h"
+#include "weather_page.h"
 
 static lv_obj_t *label_temp;
 static lv_obj_t *label_status;
@@ -12,7 +6,7 @@ static lv_obj_t *label_humidity;
 static lv_obj_t *label_wind;
 static lv_obj_t *label_city;
 
-void lv_weather_create(lv_obj_t *parent)
+void WeatherPage::init(lv_obj_t *parent)
 {
     lv_obj_set_style_bg_color(parent,
                               lv_color_hex(0x0F172A), 0);
@@ -118,3 +112,8 @@ void lv_weather_create(lv_obj_t *parent)
 
     lv_obj_center(label_wind);
 }
+
+lv_obj_t *WeatherPage::getContent()
+{
+    return content;
+};
