@@ -111,6 +111,8 @@ void WeatherPage::init(lv_obj_t *parent)
                       "Wind\n12 km/h");
 
     lv_obj_center(label_wind);
+
+    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 }
 
 lv_obj_t *WeatherPage::getContent()

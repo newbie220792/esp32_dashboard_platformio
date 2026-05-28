@@ -1,6 +1,9 @@
 #include "ui_manager.h"
 #include <config/ui_constants.h>
 
+lv_obj_t *pages[(int)ScreenId::COUNT];
+ScreenId currentPage;
+
 void UIManager::init()
 {
     // main_pannel
@@ -23,13 +26,15 @@ void UIManager::init()
     // initial all of the pages
     homePage.init(content_panel);
     weatherPage.init(content_panel);
+    piMonitoringPage.init(content_panel);
 
     // add pages
     pages[(int)(ScreenId::HOME_PAGE)] = homePage.getContent();
     pages[(int)ScreenId::WEATHER_PAGE] = weatherPage.getContent();
+    pages[(int)ScreenId::PI_MONITORING_PAGE] = piMonitoringPage.getContent();
 
     // testing loading page
-    loadingPage(ScreenId::HOME_PAGE);
+    loadingPage(ScreenId::PI_MONITORING_PAGE);
 };
 
 void UIManager::loadingPage(ScreenId screenId)

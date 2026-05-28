@@ -76,8 +76,9 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include "pages/pi_monitoring_page/pi_monitoring_page.h"
 #include <config/app_event.h>
 #include <config/message_event.h>
+#include "app_queues.h"
 
-/* Change to your screen resolution */  
+/* Change to your screen resolution */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
 static uint32_t bufSize;
@@ -92,8 +93,8 @@ static lv_style_t style_title;
 static lv_style_t style_icon;
 static lv_style_t style_bullet;
 
-QueueHandle_t uiQueue;
-QueueHandle_t mqttQueue;
+// QueueHandle_t uiQueue;
+// QueueHandle_t mqttQueue;
 
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -256,6 +257,7 @@ void lvglTask(void *pv)
 
   while (1)
   {
+    lv_timer_handler();
     if (xQueueReceive(uiQueue, &appEvent, 0))
     {
       switch (appEvent.type)
@@ -295,7 +297,6 @@ void lvglTask(void *pv)
       }
       }
     }
-    lv_timer_handler();
 
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)
@@ -351,11 +352,13 @@ void wifiTask(void *pv)
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
+QueueHandle_t uiQueue;
+QueueHandle_t mqttQueue;
 
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Arduino_GFX LVGL Widgets example");
+  Serial.println("Arduino_GFX LVGL Widgets");
 
   initialUI();
   uiQueue = xQueueCreate(5, sizeof(AppEvent));
@@ -383,6 +386,8 @@ void setup()
       NULL,
       0);
   Serial.println("Setup done");
+  Serial.printf("Heap: %d\n", ESP.getFreeHeap());
+  Serial.printf("PSRAM: %d\n", ESP.getFreePsram());
 }
 
 void loop()

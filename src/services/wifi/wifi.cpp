@@ -6,7 +6,7 @@
 #include <config/ui_constants.h>
 #include <config/topic.h>
 #include <config/app_event.h>
-#include "app_queues.h"
+// #include "app_queues.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -25,7 +25,7 @@ void initialWifi(void)
     AppEvent appEvent;
     appEvent.type = AppEventType::WIFI_CONNECTED;
 
-    xQueueSend(uiQueue, &appEvent, 0);
+    // xQueueSend(uiQueue, &appEvent, 0);
 
     client.setServer(UI::MQTT_SERVER_IP, UI::MQTT_SERVER_PORT);
     client.setCallback(callback);
