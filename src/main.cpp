@@ -76,7 +76,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include "pages/pi_monitoring_page/pi_monitoring_page.h"
 #include <config/app_event.h>
 #include <config/message_event.h>
-#include "app_queues.h"
+#include "core/app_queues.h"
 
 /* Change to your screen resolution */
 static uint32_t screenWidth;
@@ -349,8 +349,6 @@ void wifiTask(void *pv)
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
-QueueHandle_t uiQueue;
-QueueHandle_t mqttQueue;
 
 void setup()
 {

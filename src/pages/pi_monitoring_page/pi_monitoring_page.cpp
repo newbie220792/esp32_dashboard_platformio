@@ -1,5 +1,5 @@
 #include "pi_monitoring_page.h"
-// #include "app_queues.h"
+#include "core/app_queues.h"
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
@@ -170,10 +170,17 @@ static void btn_event_handle(lv_event_t *e)
     MessageEvent messageEvent;
 
     messageEvent.type = MessageEventType::MQTT_MESSAGE;
-    messageEvent.topic = Topics::Publish::HOME_LIGHT;
-    messageEvent.payload = "ON";
+    strcpy(
+        messageEvent.topic,
+        Topics::Publish::HOME_LIGHT);
 
-    // xQueueSend(mqttQueue, &messageEvent, 0);
+    strcpy(
+        messageEvent.payload,
+        "ON");
+    // messageEvent.topic = Topics::Publish::HOME_LIGHT;
+    // messageEvent.payload = "ON";
+
+    xQueueSend(mqttQueue, &messageEvent, 0);
     Serial.println("Turn on light!!");
 }
 

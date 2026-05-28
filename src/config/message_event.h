@@ -11,6 +11,6 @@ enum class MessageEventType
 struct MessageEvent
 {
     MessageEventType type;
-    const char *topic;
-    const char *payload;
+    char topic[64];
+    char payload[64];
 };
