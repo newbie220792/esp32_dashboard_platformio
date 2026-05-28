@@ -1,13 +1,12 @@
 #pragma once
 
 #include <lvgl.h>
-class WeatherPage
+#include "pages/base_page.h"
+class WeatherPage : public BasePage
 {
 public:
-    void init(lv_obj_t *parent);
-    lv_obj_t *getContent();
+    void init(lv_obj_t *parent) override;
+    const char *getTitle() override;
 
 private:
-    lv_obj_t *content;
-    lv_obj_t *title;
 };

@@ -93,9 +93,6 @@ static lv_style_t style_title;
 static lv_style_t style_icon;
 static lv_style_t style_bullet;
 
-// QueueHandle_t uiQueue;
-// QueueHandle_t mqttQueue;
-
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
@@ -336,7 +333,7 @@ void wifiTask(void *pv)
       case MessageEventType::MQTT_MESSAGE:
       {
         const char *topic = messageEvent.topic;
-        char *payload = messageEvent.payload;
+        const char *payload = messageEvent.payload;
         pushMessage(topic, payload);
         break;
       }

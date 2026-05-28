@@ -12,5 +12,5 @@ struct MessageEvent
 {
     MessageEventType type;
     const char *topic;
-    char *payload;
+    const char *payload;
 };

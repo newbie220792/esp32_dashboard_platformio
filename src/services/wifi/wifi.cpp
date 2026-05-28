@@ -63,7 +63,7 @@ void reconnect()
     client.loop();
 }
 
-void pushMessage(const char *topic, char *payload)
+void pushMessage(const char *topic, const char *payload)
 {
     if (client.connected())
     {

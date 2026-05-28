@@ -179,7 +179,7 @@ static void btn_event_handle(lv_event_t *e)
 
 void btn_navigator_handle(lv_event_t *e)
 {
-    UIManager::loadingPage(ScreenId::HOME_PAGE);
+    UIManager::navigate(ScreenId::HOME_PAGE);
     Serial.println("Navigator handle");
 }
 
@@ -245,7 +245,7 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     lv_label_set_text(labelNavigator, "To Home");
     lv_obj_center(labelNavigator);
 
-    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)
@@ -292,7 +292,7 @@ void PiMonitoringPage::ui_update_temp(float value)
     lv_label_set_text(temp_label, buf);
 }
 
-lv_obj_t *PiMonitoringPage::getContent()
+const char *PiMonitoringPage::getTitle()
 {
-    return content;
+    return "Pi Monitoring Page";
 };

@@ -323,7 +323,7 @@ void ProfilePage::init(lv_obj_t *parent)
         lv_obj_set_grid_cell(team_player_label, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_START, 4, 1);
         lv_obj_set_grid_cell(sw2, LV_GRID_ALIGN_START, 1, 1, LV_GRID_ALIGN_START, 5, 1);
     }
-    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 };
 
 lv_obj_t *ProfilePage::getContent()

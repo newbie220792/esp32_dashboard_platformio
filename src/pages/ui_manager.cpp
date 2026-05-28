@@ -1,8 +1,8 @@
 #include "ui_manager.h"
 #include <config/ui_constants.h>
 
-lv_obj_t *pages[(int)ScreenId::COUNT];
-ScreenId currentPage;
+BasePage *pages[(int)ScreenId::COUNT];
+ScreenId currentPage = ScreenId::NONE;
 
 void UIManager::init()
 {
@@ -23,31 +23,33 @@ void UIManager::init()
     lv_obj_set_style_pad_all(content_panel, 0, 0);
     lv_obj_align(content_panel, LV_ALIGN_TOP_MID, 0, UI::HEADER_HEIGHT);
 
-    // initial all of the pages
-    homePage.init(content_panel);
-    weatherPage.init(content_panel);
-    piMonitoringPage.init(content_panel);
-
     // add pages
-    pages[(int)(ScreenId::HOME_PAGE)] = homePage.getContent();
-    pages[(int)ScreenId::WEATHER_PAGE] = weatherPage.getContent();
-    pages[(int)ScreenId::PI_MONITORING_PAGE] = piMonitoringPage.getContent();
+    pages[(int)(ScreenId::HOME_PAGE)] = &homePage;
+    pages[(int)ScreenId::WEATHER_PAGE] = &weatherPage;
+    pages[(int)ScreenId::PI_MONITORING_PAGE] = &piMonitoringPage;
 
     // testing loading page
-    loadingPage(ScreenId::PI_MONITORING_PAGE);
+    navigate(ScreenId::PI_MONITORING_PAGE);
 };
 
-void UIManager::loadingPage(ScreenId screenId)
+void UIManager::navigate(ScreenId screenId)
 {
     if (screenId == currentPage)
         return;
-    lv_obj_add_flag(
-        pages[(int)currentPage],
-        LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_clear_flag(
-        pages[(int)screenId],
-        LV_OBJ_FLAG_HIDDEN);
+    if (currentPage)
+    {
+        // re-create page
+        BasePage *new_page = pages[(int)screenId];
+        new_page->init(NULL);
 
-    currentPage = screenId;
+        // destroy old page
+        BasePage *old_page = pages[(int)currentPage];
+        old_page->destroy();
+        currentPage = screenId;
+    }
+    else
+    {
+        Serial.println("CurrentPage is not created");
+    }
 };

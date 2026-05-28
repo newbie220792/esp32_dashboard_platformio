@@ -13,7 +13,7 @@ class UIManager
 {
 public:
     void init();
-    static void loadingPage(ScreenId screenId);
+    static void navigate(ScreenId screenId);
 
 private:
     HeaderPanel header;
