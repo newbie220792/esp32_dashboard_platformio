@@ -3,6 +3,7 @@
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
+#include <components/button/button.h>
 
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
@@ -220,14 +221,8 @@ void PiMonitoringPage::init(lv_obj_t *parent)
                          LV_GRID_ALIGN_STRETCH, 0, 2,
                          LV_GRID_ALIGN_STRETCH, 1, 1);
 
-    // button test
-    lv_obj_t *btn_test = lv_btn_create(content);
-    lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_ALL, NULL);
-    lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
-
-    lv_obj_t *label = lv_label_create(btn_test);
-    lv_label_set_text(label, "Button");
-    lv_obj_center(label);
+    // custom button
+    Button::create(content, "Button", btn_event_handle);
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)

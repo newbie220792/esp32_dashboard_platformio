@@ -1,6 +1,6 @@
 #include "button.h"
 
-void Button::create(lv_obj_t *parent, lv_event_cb_t event_cb)
+void Button::create(lv_obj_t *parent, const char *text, lv_event_cb_t event_cb)
 {
 
     /*Init the style for the default state*/
@@ -59,12 +59,16 @@ void Button::create(lv_obj_t *parent, lv_event_cb_t event_cb)
     {
         addHandle(event_cb);
     }
+
     lv_obj_t *label = lv_label_create(btn1);
-    lv_label_set_text(label, "Button");
+    lv_label_set_text(label, text);
     lv_obj_center(label);
 };
 
 void Button::addHandle(lv_event_cb_t event_cb)
 {
-    lv_obj_add_event_cb(btn1, event_cb, LV_EVENT_ALL, NULL);
+    if (event_cb)
+    {
+        lv_obj_add_event_cb(btn1, event_cb, LV_EVENT_ALL, NULL);
+    }
 }
