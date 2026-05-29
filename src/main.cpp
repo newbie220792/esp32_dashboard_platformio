@@ -282,7 +282,7 @@ void lvglTask(void *pv)
       }
       case AppEventType::PI_TEMP:
       {
-        float temp = strtol(appEvent.data, nullptr, 0);
+        float temp = atof(appEvent.data);
         PiMonitoringPage::ui_update_temp(temp);
         break;
       }
@@ -355,9 +355,10 @@ void setup()
   Serial.begin(115200);
   Serial.println("Arduino_GFX LVGL Widgets");
 
+  uiQueue = xQueueCreate(20, sizeof(AppEvent));
+  mqttQueue = xQueueCreate(50, sizeof(MessageEvent));
+
   initialUI();
-  uiQueue = xQueueCreate(5, sizeof(AppEvent));
-  mqttQueue = xQueueCreate(5, sizeof(MessageEvent));
 
   // =========================
   // TASKS
@@ -366,7 +367,7 @@ void setup()
   xTaskCreatePinnedToCore(
       lvglTask,
       "LVGL",
-      8192,
+      16384,
       NULL,
       3,
       NULL,
@@ -375,7 +376,7 @@ void setup()
   xTaskCreatePinnedToCore(
       wifiTask,
       "WIFI",
-      8192,
+      16384,
       NULL,
       2,
       NULL,
