@@ -2,20 +2,18 @@
 
 #include <lvgl.h>
 #include <stdio.h>
+#include "pages/base_page.h"
 
-class PiMonitoringPage
+class PiMonitoringPage : public BasePage
 {
 public:
-    void init(lv_obj_t *parent);
+    void init(lv_obj_t *parent) override;
+    const char *getTitle() override;
+    void destroy() override;
 
-    lv_obj_t *getContent();
     static void ui_update_cpu(int value);
     static void ui_update_mem(int value);
     static void ui_update_temp(float value);
 
 private:
-    lv_obj_t *content;
-    lv_obj_t *title;
-
-    // lv_obj_t *temp_label;
 };

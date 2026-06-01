@@ -14,6 +14,6 @@ public:
     static constexpr int MQTT_SERVER_PORT = 1883;
 
     // WiFi
-    static constexpr const char *SSID = "";
-    static constexpr const char *PASSWORD = "";
+    static constexpr const char *SSID = "Nha Cua En";
+    static constexpr const char *PASSWORD = "0389056600";
 };

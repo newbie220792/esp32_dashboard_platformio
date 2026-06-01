@@ -5,4 +5,4 @@
 
 extern QueueHandle_t mqttQueue;
 extern QueueHandle_t uiQueue;
-extern QueueHandle_t systemQueue;
+// extern QueueHandle_t systemQueue;
