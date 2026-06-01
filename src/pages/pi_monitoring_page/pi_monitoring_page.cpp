@@ -277,7 +277,7 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     lv_label_set_text(labelNavigator, "To Home");
     lv_obj_center(labelNavigator);
 
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);LV_EVENT_CLICKED
+    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)
@@ -350,17 +350,27 @@ const char *PiMonitoringPage::getTitle()
 
 void PiMonitoringPage::destroy()
 {
-    // if (content)
-    // {
-    //     lv_obj_del(content);
-    //     content = nullptr;
-    // }
-    cpu_chart = nullptr;
-    cpu_ser = nullptr;
-    cpu_label = nullptr;
-    mem_chart = nullptr;
-    mem_ser = nullptr;
-    mem_label = nullptr;
-    temp_label = nullptr;
-    temp_bar = nullptr;
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide Pi Monitoring page");
+    }
 }
+
+void PiMonitoringPage::hide()
+{
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide PiMonitoringPage page");
+    }
+};
+
+void PiMonitoringPage::show()
+{
+    if (content)
+    {
+        lv_obj_clear_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Show PiMonitoringPage page");
+    }
+};

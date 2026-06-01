@@ -7,16 +7,9 @@ class BasePage
 {
 public:
     virtual void init(lv_obj_t *parent) = 0;
-    virtual void destroy()
-    {
-        if (content)
-        {
-            lv_obj_del(content);
-            content = nullptr;
-            return;
-        }
-        Serial.println("Content is invalid");
-    };
+    virtual void destroy() = 0;
+    virtual void show() = 0;
+    virtual void hide() = 0;
     virtual const char *getTitle() = 0;
 
     lv_obj_t *getContent()

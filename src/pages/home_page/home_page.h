@@ -12,6 +12,8 @@ public:
     void init(lv_obj_t *parent) override;
     const char *getTitle() override;
     void destroy() override;
+    void show() override;
+    void hide() override;
 
 private:
     // lv_obj_t *content;

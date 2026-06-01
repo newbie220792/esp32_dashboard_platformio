@@ -112,10 +112,37 @@ void WeatherPage::init(lv_obj_t *parent)
 
     lv_obj_center(label_wind);
 
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 }
 
 const char *WeatherPage::getTitle()
 {
     return "Weather Page";
+};
+
+void WeatherPage::destroy()
+{
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide Weather page");
+    }
+};
+
+void WeatherPage::hide()
+{
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide WeatherPage page");
+    }
+};
+
+void WeatherPage::show()
+{
+    if (content)
+    {
+        lv_obj_clear_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Show WeatherPage page");
+    }
 };

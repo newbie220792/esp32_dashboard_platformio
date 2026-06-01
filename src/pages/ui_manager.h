@@ -17,6 +17,10 @@ public:
 
 private:
     HeaderPanel header;
+    HomePage homePage;
     WeatherPage weatherPage;
     PiMonitoringPage piMonitoringPage;
+
+    lv_obj_t *content_panel;
+    lv_obj_t *main_panel;
 };

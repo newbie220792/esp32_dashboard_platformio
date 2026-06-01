@@ -3,9 +3,6 @@
 
 BasePage *pages[(int)ScreenId::COUNT];
 ScreenId currentPage = ScreenId::NONE;
-static lv_obj_t *content_panel;
-static lv_obj_t *main_panel;
-static HomePage homePage;
 
 void UIManager::init()
 {
@@ -26,6 +23,11 @@ void UIManager::init()
     lv_obj_set_style_pad_all(content_panel, 0, 0);
     lv_obj_align(content_panel, LV_ALIGN_TOP_MID, 0, UI::HEADER_HEIGHT);
 
+    // initial page
+    homePage.init(content_panel);
+    weatherPage.init(content_panel);
+    piMonitoringPage.init(content_panel);
+
     // add pages
     pages[(int)(ScreenId::HOME_PAGE)] = &homePage;
     pages[(int)ScreenId::WEATHER_PAGE] = &weatherPage;
@@ -40,51 +42,17 @@ void UIManager::navigate(ScreenId screenId)
     if (screenId == currentPage)
         return;
 
-    Serial.printf(
-        "Navigate to screen: %d, currentPage:%d\n",
-        (int)screenId,
-        (int)currentPage);
-
-    // destroy old panel
-    if (content_panel)
+    BasePage *old_page = pages[(int)currentPage];
+    if (old_page)
     {
-        BasePage *old_page = pages[(int)screenId];
-        if (old_page == nullptr)
-        {
-            Serial.println("new_page NULL");
-            return;
-        }
-        old_page->destroy();
-        lv_obj_del(content_panel);
-        content_panel = nullptr;
+        old_page->hide();
     }
-
-    // create new panel
-    content_panel = lv_obj_create(main_panel);
-
-    lv_obj_set_size(
-        content_panel,
-        UI::SCREEN_WIDTH,
-        UI::SCREEN_HEIGHT - UI::HEADER_HEIGHT);
-
-    lv_obj_set_style_border_width(content_panel, 0, 0);
-    lv_obj_set_style_pad_all(content_panel, 0, 0);
-
-    lv_obj_align(
-        content_panel,
-        LV_ALIGN_TOP_MID,
-        0,
-        UI::HEADER_HEIGHT);
 
     BasePage *new_page = pages[(int)screenId];
-
-    if (new_page == nullptr)
+    if (new_page)
     {
-        Serial.println("new_page NULL");
-        return;
+        new_page->show();
     }
-
-    new_page->init(content_panel);
 
     currentPage = screenId;
 };

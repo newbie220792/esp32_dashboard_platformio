@@ -28,7 +28,7 @@ void HomePage::init(lv_obj_t *parent)
     lv_label_set_text(labelNavigator, "To Home");
     lv_obj_center(labelNavigator);
 
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 };
 
 const char *HomePage::getTitle()
@@ -38,11 +38,27 @@ const char *HomePage::getTitle()
 
 void HomePage::destroy()
 {
-    // if (content)
-    // {
-    //     lv_obj_del(content);
-    //     content = nullptr;
-    //     return;
-    // }
-    Serial.println("destroy home page");
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide Home page");
+    }
+};
+
+void HomePage::hide()
+{
+    if (content)
+    {
+        lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Hide Home page");
+    }
+};
+
+void HomePage::show()
+{
+    if (content)
+    {
+        lv_obj_clear_flag(content, LV_OBJ_FLAG_HIDDEN);
+        Serial.println("Show Home page");
+    }
 };

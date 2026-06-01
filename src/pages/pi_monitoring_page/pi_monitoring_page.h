@@ -10,6 +10,8 @@ public:
     void init(lv_obj_t *parent) override;
     const char *getTitle() override;
     void destroy() override;
+     void show() override;
+    void hide() override;
 
     static void ui_update_cpu(int value);
     static void ui_update_mem(int value);
