@@ -23,7 +23,7 @@ void HeaderPanel::init(lv_obj_t *parent)
     /* Wifi */
     wifi_label = lv_label_create(header_panel);
     lv_label_set_text(wifi_label, LV_SYMBOL_WIFI);
-    lv_obj_set_style_text_color(wifi_label, lv_color_hex(Color::WIFI_ACTIVE), 0);
+    lv_obj_set_style_text_color(wifi_label, lv_color_hex(Color::WIFI_INACTIVE), 0);
     lv_obj_align(wifi_label, LV_ALIGN_RIGHT_MID, 0, 0);
 };
 

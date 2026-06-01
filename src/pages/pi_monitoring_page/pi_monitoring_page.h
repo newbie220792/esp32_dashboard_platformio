@@ -9,6 +9,7 @@ class PiMonitoringPage : public BasePage
 public:
     void init(lv_obj_t *parent) override;
     const char *getTitle() override;
+    void destroy() override;
 
     static void ui_update_cpu(int value);
     static void ui_update_mem(int value);

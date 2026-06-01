@@ -11,7 +11,7 @@ class HomePage : public BasePage
 public:
     void init(lv_obj_t *parent) override;
     const char *getTitle() override;
-    // void destroy() override;
+    void destroy() override;
 
 private:
     // lv_obj_t *content;
