@@ -7,20 +7,7 @@
 #include "pages/ui_manager.h"
 #include <config/ui_constants.h>
 
-static lv_obj_t *cpu_chart;
-static lv_obj_t *mem_chart;
-
-static lv_chart_series_t *cpu_ser;
-static lv_chart_series_t *mem_ser;
-
-static lv_obj_t *cpu_label;
-static lv_obj_t *mem_label;
-
-static lv_obj_t *temp_label;
-static lv_obj_t *temp_bar;
-
-static lv_style_t style_indic;
-static bool style_init_done = false;
+bool style_init_done = false;
 
 lv_obj_t *create_chart(
     lv_obj_t **chart,
@@ -120,7 +107,7 @@ lv_obj_t *create_chart(
     return cont;
 }
 
-lv_obj_t *create_temp_gauge(lv_obj_t *parent)
+lv_obj_t *PiMonitoringPage::create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
@@ -147,7 +134,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 0);
 
     //  create temp bar
-    // static lv_style_t style_indic;
+    lv_style_t style_indic;
     if (!style_init_done)
     {
 
@@ -158,6 +145,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
         lv_style_set_bg_grad_dir(&style_indic, LV_GRAD_DIR_HOR);
         style_init_done = true;
     }
+
     temp_bar = lv_bar_create(cont);
     lv_obj_add_style(temp_bar, &style_indic, LV_PART_INDICATOR);
     lv_obj_set_size(temp_bar, 200, 20);
@@ -190,18 +178,10 @@ static void btn_event_handle(lv_event_t *e)
     strcpy(
         messageEvent.payload,
         "ON");
-    // messageEvent.topic = Topics::Publish::HOME_LIGHT;
-    // messageEvent.payload = "ON";
 
     xQueueSend(mqttQueue, &messageEvent, 0);
     Serial.println("Turn on light!!");
 }
-
-// void btn_navigator_handle(lv_event_t *e)
-// {
-//     UIManager::navigate(ScreenId::HOME_PAGE);
-//     Serial.println("Navigator handle");
-// }
 
 static void navigate_home_async(void *arg)
 {

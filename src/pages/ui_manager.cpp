@@ -10,6 +10,7 @@ static HomePage homePage;
 void UIManager::init()
 {
     // main_pannel
+    // lv_layer
     main_panel = lv_obj_create(lv_scr_act());
     lv_obj_set_size(main_panel, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_pad_all(main_panel, 0, 0);
@@ -55,6 +56,7 @@ void UIManager::navigate(ScreenId screenId)
             return;
         }
         old_page->destroy();
+        delete old_page;
         lv_obj_del(content_panel);
         content_panel = nullptr;
     }

@@ -251,7 +251,7 @@ void initialUI()
 void lvglTask(void *pv)
 {
   AppEvent appEvent;
-
+  PiMonitoringPage piMonitoringPage;
   while (1)
   {
     lv_timer_handler();
@@ -269,7 +269,7 @@ void lvglTask(void *pv)
 
         char *cpu_percent = appEvent.data;
         int cpu = strtol(cpu_percent, nullptr, 0);
-        PiMonitoringPage::ui_update_cpu(cpu);
+        piMonitoringPage.ui_update_cpu(cpu);
         break;
       }
       case AppEventType::PI_MEM:
@@ -277,13 +277,13 @@ void lvglTask(void *pv)
 
         char *mem_percent = appEvent.data;
         int mem = strtol(mem_percent, nullptr, 0);
-        PiMonitoringPage::ui_update_mem(mem);
+        piMonitoringPage.ui_update_mem(mem);
         break;
       }
       case AppEventType::PI_TEMP:
       {
         float temp = atof(appEvent.data);
-        PiMonitoringPage::ui_update_temp(temp);
+        piMonitoringPage.ui_update_temp(temp);
         break;
       }
       default:
