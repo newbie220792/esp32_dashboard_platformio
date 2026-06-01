@@ -27,8 +27,6 @@ void HomePage::init(lv_obj_t *parent)
     lv_obj_t *labelNavigator = lv_label_create(btn_navigator);
     lv_label_set_text(labelNavigator, "To Home");
     lv_obj_center(labelNavigator);
-
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
 };
 
 const char *HomePage::getTitle()
@@ -38,11 +36,7 @@ const char *HomePage::getTitle()
 
 void HomePage::destroy()
 {
-    // if (content)
-    // {
-    //     lv_obj_del(content);
-    //     content = nullptr;
-    //     return;
-    // }
+    content = nullptr;
+    title = nullptr;
     Serial.println("destroy home page");
 };

@@ -228,8 +228,6 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     lv_obj_t *labelNavigator = lv_label_create(btn_navigator);
     lv_label_set_text(labelNavigator, "To Home");
     lv_obj_center(labelNavigator);
-
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);LV_EVENT_CLICKED
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)
@@ -310,4 +308,7 @@ void PiMonitoringPage::destroy()
     mem_label = nullptr;
     temp_label = nullptr;
     temp_bar = nullptr;
+    content = nullptr;
+    title = nullptr;
+    Serial.println("destroy pi monitor page");
 }

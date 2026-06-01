@@ -59,6 +59,7 @@ void UIManager::navigate(ScreenId screenId)
         delete old_page;
         lv_obj_del(content_panel);
         content_panel = nullptr;
+        Serial.println("Destroy old_page success");
     }
 
     // create new panel
@@ -79,14 +80,12 @@ void UIManager::navigate(ScreenId screenId)
         UI::HEADER_HEIGHT);
 
     BasePage *new_page = pages[(int)screenId];
-
     if (new_page == nullptr)
     {
         Serial.println("new_page NULL");
         return;
     }
-
     new_page->init(content_panel);
-
+    Serial.println("Initial new_page success");
     currentPage = screenId;
 };

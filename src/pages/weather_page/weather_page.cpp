@@ -119,3 +119,10 @@ const char *WeatherPage::getTitle()
 {
     return "Weather Page";
 };
+
+void WeatherPage::destroy()
+{
+    content = nullptr;
+    title = nullptr;
+    Serial.println("destroy weather page");
+}

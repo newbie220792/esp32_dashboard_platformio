@@ -7,6 +7,7 @@ class WeatherPage : public BasePage
 public:
     void init(lv_obj_t *parent) override;
     const char *getTitle() override;
+    void destroy() override;
 
 private:
 };

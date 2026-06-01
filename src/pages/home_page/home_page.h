@@ -14,8 +14,6 @@ public:
     void destroy() override;
 
 private:
-    // lv_obj_t *content;
-    // lv_obj_t *title;
 };
 
 #endif
