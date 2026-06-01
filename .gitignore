@@ -7,3 +7,4 @@ logs
 .clangd
 compile_commands.json
 .cache
+.idea

@@ -42,6 +42,5 @@ void callback(char *topic, byte *payload, unsigned int length)
         appEvent.data,
         (char *)payload);
 
-    // appEvent.data = (char *)payload;
     xQueueSend(uiQueue, &appEvent, 0);
 }

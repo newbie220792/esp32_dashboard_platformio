@@ -29,6 +29,5 @@ private:
     lv_obj_t *temp_bar;
 
     lv_obj_t *create_temp_gauge(lv_obj_t *parent);
-    // lv_style_t style_indic;
     bool style_init_done;
 };
