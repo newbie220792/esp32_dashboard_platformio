@@ -5,6 +5,8 @@
 #include <Arduino.h>
 #include "pages/ui_manager.h"
 #include <config/ui_constants.h>
+#include <ArduinoJson.h>
+#include <config/room.h>
 
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
@@ -186,21 +188,17 @@ static void btn_event_handle(lv_event_t *e)
         messageEvent.topic,
         Topics::Publish::HOME_LIGHT);
 
-    strcpy(
-        messageEvent.payload,
-        "ON");
-    // messageEvent.topic = Topics::Publish::HOME_LIGHT;
-    // messageEvent.payload = "ON";
+    JsonDocument doc;
+
+    doc["status"] = "ON";
+    doc["room"] = Room::KITCHEN;
+    doc["index"] = 1;
+
+    serializeJson(doc, messageEvent.payload);
 
     xQueueSend(mqttQueue, &messageEvent, 0);
     Serial.println("Turn on light!!");
 }
-
-// void btn_navigator_handle(lv_event_t *e)
-// {
-//     UIManager::navigate(ScreenId::HOME_PAGE);
-//     Serial.println("Navigator handle");
-// }
 
 static void navigate_home_async(void *arg)
 {
