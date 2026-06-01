@@ -6,7 +6,7 @@
 #include <config/ui_constants.h>
 #include <config/topic.h>
 #include <config/app_event.h>
-#include "app_queues.h"
+#include "core/app_queues.h"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -63,7 +63,7 @@ void reconnect()
     client.loop();
 }
 
-void pushMessage(const char *topic, char *payload)
+void pushMessage(const char *topic, const char *payload)
 {
     if (client.connected())
     {

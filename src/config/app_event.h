@@ -12,5 +12,5 @@ enum class AppEventType
 struct AppEvent
 {
     AppEventType type;
-    char *data;
+    char data[64];
 };

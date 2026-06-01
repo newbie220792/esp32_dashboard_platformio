@@ -4,17 +4,18 @@
 #define LV_HOME_PAGE_H
 
 #include <lvgl.h>
+#include "pages/base_page.h"
 
-class HomePage
+class HomePage : public BasePage
 {
 public:
-    void init(lv_obj_t *parent);
-
-    lv_obj_t *getContent();
+    void init(lv_obj_t *parent) override;
+    const char *getTitle() override;
+    void destroy() override;
 
 private:
-    lv_obj_t *content;
-    lv_obj_t *title;
+    // lv_obj_t *content;
+    // lv_obj_t *title;
 };
 
 #endif

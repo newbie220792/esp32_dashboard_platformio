@@ -76,8 +76,9 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include "pages/pi_monitoring_page/pi_monitoring_page.h"
 #include <config/app_event.h>
 #include <config/message_event.h>
+#include "core/app_queues.h"
 
-/* Change to your screen resolution */  
+/* Change to your screen resolution */
 static uint32_t screenWidth;
 static uint32_t screenHeight;
 static uint32_t bufSize;
@@ -91,9 +92,6 @@ static lv_style_t style_text_muted;
 static lv_style_t style_title;
 static lv_style_t style_icon;
 static lv_style_t style_bullet;
-
-QueueHandle_t uiQueue;
-QueueHandle_t mqttQueue;
 
 /* Display flushing */
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -256,6 +254,7 @@ void lvglTask(void *pv)
 
   while (1)
   {
+    lv_timer_handler();
     if (xQueueReceive(uiQueue, &appEvent, 0))
     {
       switch (appEvent.type)
@@ -283,7 +282,7 @@ void lvglTask(void *pv)
       }
       case AppEventType::PI_TEMP:
       {
-        float temp = strtol(appEvent.data, nullptr, 0);
+        float temp = atof(appEvent.data);
         PiMonitoringPage::ui_update_temp(temp);
         break;
       }
@@ -295,7 +294,6 @@ void lvglTask(void *pv)
       }
       }
     }
-    lv_timer_handler();
 
 #ifdef DIRECT_MODE
 #if (LV_COLOR_16_SWAP != 0)
@@ -335,7 +333,7 @@ void wifiTask(void *pv)
       case MessageEventType::MQTT_MESSAGE:
       {
         const char *topic = messageEvent.topic;
-        char *payload = messageEvent.payload;
+        const char *payload = messageEvent.payload;
         pushMessage(topic, payload);
         break;
       }
@@ -355,11 +353,12 @@ void wifiTask(void *pv)
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Arduino_GFX LVGL Widgets example");
+  Serial.println("Arduino_GFX LVGL Widgets");
+
+  uiQueue = xQueueCreate(20, sizeof(AppEvent));
+  mqttQueue = xQueueCreate(50, sizeof(MessageEvent));
 
   initialUI();
-  uiQueue = xQueueCreate(5, sizeof(AppEvent));
-  mqttQueue = xQueueCreate(5, sizeof(MessageEvent));
 
   // =========================
   // TASKS
@@ -368,7 +367,7 @@ void setup()
   xTaskCreatePinnedToCore(
       lvglTask,
       "LVGL",
-      8192,
+      16384,
       NULL,
       3,
       NULL,
@@ -377,12 +376,14 @@ void setup()
   xTaskCreatePinnedToCore(
       wifiTask,
       "WIFI",
-      8192,
+      16384,
       NULL,
       2,
       NULL,
       0);
   Serial.println("Setup done");
+  Serial.printf("Heap: %d\n", ESP.getFreeHeap());
+  Serial.printf("PSRAM: %d\n", ESP.getFreePsram());
 }
 
 void loop()

@@ -1,6 +1,6 @@
 #include "sub_mqtt.h"
 #include <config/app_event.h>
-#include "app_queues.h"
+#include "core/app_queues.h"
 #include <config/topic.h>
 
 AppEventType getAppEventType(const char *topic)
@@ -37,6 +37,11 @@ void callback(char *topic, byte *payload, unsigned int length)
     AppEvent appEvent;
 
     appEvent.type = getAppEventType(topic);
-    appEvent.data = (char *)payload;
+
+    strcpy(
+        appEvent.data,
+        (char *)payload);
+
+    // appEvent.data = (char *)payload;
     xQueueSend(uiQueue, &appEvent, 0);
 }
