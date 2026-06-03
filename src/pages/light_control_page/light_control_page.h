@@ -7,11 +7,10 @@
 class LightControlPage : public BasePage
 {
 public:
-    void init(lv_obj_t *parent) override;
-    const char *getTitle() override;
-    void destroy() override;
+    lv_obj_t *init(lv_obj_t *parent) override;
+     const char *getTitle() override;
 
-private:
-    Card card;
-    LightIcon lightIcon;
+ private:
+     Card card;
+     LightIcon lightIcon;
 };

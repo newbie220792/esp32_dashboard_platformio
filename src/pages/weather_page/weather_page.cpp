@@ -6,13 +6,14 @@ static lv_obj_t *label_humidity;
 static lv_obj_t *label_wind;
 static lv_obj_t *label_city;
 
-void WeatherPage::init(lv_obj_t *parent)
+lv_obj_t *WeatherPage::init(lv_obj_t *parent)
 {
-    lv_obj_set_style_bg_color(parent,
+    content = lv_obj_create(parent);
+    lv_obj_set_style_bg_color(content,
                               lv_color_hex(0x0F172A), 0);
 
     // Temperature
-    label_temp = lv_label_create(parent);
+    label_temp = lv_label_create(content);
     lv_label_set_text(label_temp, "31°C");
 
     lv_obj_set_style_text_font(
@@ -31,7 +32,7 @@ void WeatherPage::init(lv_obj_t *parent)
                  30);
 
     // Weather Status
-    label_status = lv_label_create(parent);
+    label_status = lv_label_create(content);
     lv_label_set_text(label_status, "Cloudy");
 
     lv_obj_set_style_text_font(
@@ -51,7 +52,7 @@ void WeatherPage::init(lv_obj_t *parent)
                     10);
 
     // City
-    label_city = lv_label_create(parent);
+    label_city = lv_label_create(content);
     lv_label_set_text(label_city, "Binh Duong");
 
     lv_obj_set_style_text_font(
@@ -71,7 +72,7 @@ void WeatherPage::init(lv_obj_t *parent)
                     8);
 
     // Humidity card
-    lv_obj_t *hum_card = lv_obj_create(parent);
+    lv_obj_t *hum_card = lv_obj_create(content);
     lv_obj_set_size(hum_card, 120, 80);
 
     lv_obj_align(hum_card,
@@ -92,7 +93,7 @@ void WeatherPage::init(lv_obj_t *parent)
     lv_obj_center(label_humidity);
 
     // Wind card
-    lv_obj_t *wind_card = lv_obj_create(parent);
+    lv_obj_t *wind_card = lv_obj_create(content);
     lv_obj_set_size(wind_card, 120, 80);
 
     lv_obj_align(wind_card,
@@ -113,6 +114,7 @@ void WeatherPage::init(lv_obj_t *parent)
     lv_obj_center(label_wind);
 
     // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);
+    return content;
 }
 
 const char *WeatherPage::getTitle()

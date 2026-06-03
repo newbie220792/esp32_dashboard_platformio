@@ -1,6 +1,6 @@
 #include "light_control_page.h"
 
-void LightControlPage::init(lv_obj_t *parent)
+lv_obj_t *LightControlPage::init(lv_obj_t *parent)
 {
     // initial content
     content = lv_obj_create(parent);
@@ -15,14 +15,10 @@ void LightControlPage::init(lv_obj_t *parent)
     lightIcon.create(second_floor_card, "Btn 1");
     lightIcon.create(second_floor_card, "Btn 2");
     lightIcon.create(second_floor_card, "Btn 3");
+    return content;
 };
 
 const char *LightControlPage::getTitle()
 {
     return "Light Control Page";
-};
-
-void LightControlPage::destroy()
-{
-    Serial.println("destroy home page");
 };

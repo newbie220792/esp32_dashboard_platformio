@@ -7,16 +7,17 @@
 #include "pages/weather_page/weather_page.h"
 #include "components/header_panel/header.h"
 #include "pages/pi_monitoring_page/pi_monitoring_page.h"
+#include "pages/light_control_page/light_control_page.h"
 #include "disp_size_t.h"
 
 class UIManager
 {
 public:
     void init();
-    static void navigate(ScreenId screenId);
 
 private:
     HeaderPanel header;
     WeatherPage weatherPage;
     PiMonitoringPage piMonitoringPage;
+    LightControlPage lightControlPage;
 };
