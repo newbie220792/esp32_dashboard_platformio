@@ -17,7 +17,6 @@ public:
 
 private:
     HeaderPanel header;
-    WeatherPage weatherPage;
     PiMonitoringPage piMonitoringPage;
     LightControlPage lightControlPage;
 };

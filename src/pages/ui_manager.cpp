@@ -30,9 +30,6 @@ void UIManager::init()
     lv_obj_t *pi_tab = lv_tabview_add_tab(tabview, LV_SYMBOL_SETTINGS);
     content = piMonitoringPage.init(pi_tab);
 
-    lv_obj_t *weather_tab = lv_tabview_add_tab(tabview, LV_SYMBOL_CLOUD);
-    content = weatherPage.init(weather_tab);
-
     lv_obj_t *light_control_tab = lv_tabview_add_tab(tabview, LV_SYMBOL_LIGHT);
     content = lightControlPage.init(light_control_tab);
 

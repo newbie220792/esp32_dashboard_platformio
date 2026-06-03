@@ -5,6 +5,7 @@
 
 #include <lvgl.h>
 #include "pages/base_page.h"
+#include "components/card_component/card.h"
 
 class HomePage : public BasePage
 {
@@ -13,6 +14,8 @@ public:
      const char *getTitle() override;
 
  private:
+     Card card;
+     lv_obj_t *initial_left_col(lv_obj_t *content);
 };
 
 #endif
