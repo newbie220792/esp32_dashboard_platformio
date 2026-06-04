@@ -1,6 +1,7 @@
 #include "header.h"
 #include <config/colors.h>
 #include <config/ui_constants.h>
+#include <components/clock_component/clock.h>
 
 static lv_obj_t *time_label;
 static lv_obj_t *wifi_label;
@@ -14,11 +15,13 @@ void HeaderPanel::init(lv_obj_t *parent)
     lv_obj_set_scrollbar_mode(header_panel, LV_SCROLLBAR_MODE_OFF);
 
     /* Time */
-    time_label = lv_label_create(header_panel);
-    lv_label_set_text(time_label, "14:25:00");
-    lv_obj_set_style_text_color(time_label, lv_color_black(), 0);
-    lv_obj_set_align(time_label, LV_ALIGN_LEFT_MID);
-    lv_obj_set_style_pad_all(time_label, 0, 0);
+    // time_label = lv_label_create(header_panel);
+    // lv_label_set_text(time_label, "14:25:00");
+    // lv_obj_set_style_text_color(time_label, lv_color_black(), 0);
+    // lv_obj_set_align(time_label, LV_ALIGN_LEFT_MID);
+    // lv_obj_set_style_pad_all(time_label, 0, 0);
+
+    ClockWidget::init(header_panel);
 
     /* Wifi */
     wifi_label = lv_label_create(header_panel);

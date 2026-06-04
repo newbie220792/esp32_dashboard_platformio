@@ -5,6 +5,8 @@
 #include <Arduino.h>
 #include "pages/ui_manager.h"
 #include <config/ui_constants.h>
+#include <ArduinoJson.h>
+#include <config/room.h>
 
 static lv_obj_t *cpu_chart;
 static lv_obj_t *mem_chart;
@@ -186,33 +188,19 @@ static void btn_event_handle(lv_event_t *e)
         messageEvent.topic,
         Topics::Publish::HOME_LIGHT);
 
-    strcpy(
-        messageEvent.payload,
-        "ON");
-    // messageEvent.topic = Topics::Publish::HOME_LIGHT;
-    // messageEvent.payload = "ON";
+    JsonDocument doc;
+
+    doc["status"] = "ON";
+    doc["room"] = Room::KITCHEN;
+    doc["index"] = 1;
+
+    serializeJson(doc, messageEvent.payload);
 
     xQueueSend(mqttQueue, &messageEvent, 0);
     Serial.println("Turn on light!!");
 }
 
-// void btn_navigator_handle(lv_event_t *e)
-// {
-//     UIManager::navigate(ScreenId::HOME_PAGE);
-//     Serial.println("Navigator handle");
-// }
-
-static void navigate_home_async(void *arg)
-{
-    UIManager::navigate(ScreenId::HOME_PAGE);
-}
-
-void btn_navigator_handle(lv_event_t *e)
-{
-    lv_async_call(navigate_home_async, nullptr);
-}
-
-void PiMonitoringPage::init(lv_obj_t *parent)
+lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
 {
     Serial.println("Init PiMonitoringPage");
     content = lv_obj_create(parent);
@@ -267,17 +255,7 @@ void PiMonitoringPage::init(lv_obj_t *parent)
     // lv_obj_t *label = lv_label_create(btn_test);
     // lv_label_set_text(label, "Button");
     // lv_obj_center(label);
-
-    // button navigate to home
-    lv_obj_t *btn_navigator = lv_btn_create(content);
-    lv_obj_add_event_cb(btn_navigator, btn_navigator_handle, LV_EVENT_PRESSED, NULL);
-    lv_obj_align(btn_navigator, LV_ALIGN_CENTER, 0, 0);
-
-    lv_obj_t *labelNavigator = lv_label_create(btn_navigator);
-    lv_label_set_text(labelNavigator, "To Home");
-    lv_obj_center(labelNavigator);
-
-    // lv_obj_add_flag(content, LV_OBJ_FLAG_HIDDEN);LV_EVENT_CLICKED
+    return content;
 }
 
 void PiMonitoringPage::ui_update_cpu(int value)
@@ -347,20 +325,3 @@ const char *PiMonitoringPage::getTitle()
 {
     return "Pi Monitoring Page";
 };
-
-void PiMonitoringPage::destroy()
-{
-    // if (content)
-    // {
-    //     lv_obj_del(content);
-    //     content = nullptr;
-    // }
-    cpu_chart = nullptr;
-    cpu_ser = nullptr;
-    cpu_label = nullptr;
-    mem_chart = nullptr;
-    mem_ser = nullptr;
-    mem_label = nullptr;
-    temp_label = nullptr;
-    temp_bar = nullptr;
-}

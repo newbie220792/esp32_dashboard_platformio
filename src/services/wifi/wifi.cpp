@@ -11,6 +11,26 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+void initTime()
+{
+    configTime(
+        7 * 3600,
+        0,
+        "time.google.com",
+        "pool.ntp.org",
+        "time.windows.com");
+
+    struct tm timeinfo;
+
+    while (!getLocalTime(&timeinfo))
+    {
+        Serial.println("Waiting NTP...");
+        delay(500);
+    }
+
+    Serial.println("Time synchronized");
+}
+
 void initialWifi(void)
 {
     WiFi.begin(UI::SSID, UI::PASSWORD);
@@ -22,6 +42,7 @@ void initialWifi(void)
     }
     Serial.println(WiFi.localIP());
 
+    initTime();
     AppEvent appEvent;
     appEvent.type = AppEventType::WIFI_CONNECTED;
 

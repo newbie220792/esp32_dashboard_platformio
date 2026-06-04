@@ -5,17 +5,18 @@
 
 #include <lvgl.h>
 #include "pages/base_page.h"
+#include "components/card_component/card.h"
 
 class HomePage : public BasePage
 {
 public:
-    void init(lv_obj_t *parent) override;
+    lv_obj_t *init(lv_obj_t *parent) override;
     const char *getTitle() override;
-    void destroy() override;
 
 private:
-    // lv_obj_t *content;
-    // lv_obj_t *title;
+    Card card;
+    lv_obj_t *initial_left_col(lv_obj_t *content);
+    lv_obj_t *initial_right_col(lv_obj_t *content);
 };
 
 #endif
