@@ -78,6 +78,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include <config/message_event.h>
 #include "core/app_queues.h"
 #include <time.h>
+#include "components/weather_card/weather_card.h"
 
 /* Change to your screen resolution */
 static uint32_t screenWidth;
@@ -285,6 +286,24 @@ void lvglTask(void *pv)
       {
         float temp = atof(appEvent.data);
         PiMonitoringPage::ui_update_temp(temp);
+        break;
+      }
+      case AppEventType::WEATHER:
+      {
+        char *weather = appEvent.data;
+        WeatherCard::updateWeatherData(weather);
+        break;
+      }
+      case AppEventType::TEMPERATURE:
+      {
+        float temp = atof(appEvent.data);
+        WeatherCard::updateTemperature(temp);
+        break;
+      }
+      case AppEventType::HUMIDITY:
+      {
+        float humidity = atof(appEvent.data);
+        WeatherCard::updateHumidity(humidity);
         break;
       }
       default:
