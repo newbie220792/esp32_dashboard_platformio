@@ -43,7 +43,6 @@ void ClockWidget::init(lv_obj_t *parent)
         time_label,
         "--:--:--");
 
-    // lv_obj_center(time_label);
     lv_obj_set_align(time_label, LV_ALIGN_LEFT_MID);
 
     update_time(nullptr);
