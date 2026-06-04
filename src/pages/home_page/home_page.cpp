@@ -23,8 +23,7 @@ const char *HomePage::getTitle()
 lv_obj_t *HomePage::initial_left_col(lv_obj_t *content)
 {
     lv_obj_t *left_col_content = lv_obj_create(content);
-    // weather card
-    lv_obj_t *weather_card = card.create(left_col_content, "Weather");
+    lv_obj_set_size(left_col_content, LV_PCT(100), LV_PCT(100));
 
     return left_col_content;
 }
@@ -32,6 +31,10 @@ lv_obj_t *HomePage::initial_left_col(lv_obj_t *content)
 lv_obj_t *HomePage::initial_right_col(lv_obj_t *content)
 {
     lv_obj_t *right_col_content = lv_obj_create(content);
+    lv_obj_set_size(right_col_content, LV_PCT(100), LV_PCT(100));
+
+    // weather card
+    lv_obj_t *weather_card = card.create(right_col_content, NULL);
 
     return right_col_content;
 }
