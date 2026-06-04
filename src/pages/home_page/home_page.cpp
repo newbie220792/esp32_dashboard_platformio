@@ -29,7 +29,7 @@ lv_obj_t *HomePage::initial_left_col(lv_obj_t *content)
     return left_col_content;
 }
 
-lv_obj_t *initial_right_col(lv_obj_t *content)
+lv_obj_t *HomePage::initial_right_col(lv_obj_t *content)
 {
     lv_obj_t *right_col_content = lv_obj_create(content);
 

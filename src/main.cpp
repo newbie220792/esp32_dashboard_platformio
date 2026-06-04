@@ -77,6 +77,7 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
 #include <config/app_event.h>
 #include <config/message_event.h>
 #include "core/app_queues.h"
+#include <time.h>
 
 /* Change to your screen resolution */
 static uint32_t screenWidth;
@@ -359,7 +360,7 @@ void setup()
   mqttQueue = xQueueCreate(50, sizeof(MessageEvent));
 
   initialUI();
-
+  // initTime();
   // =========================
   // TASKS
   // =========================
