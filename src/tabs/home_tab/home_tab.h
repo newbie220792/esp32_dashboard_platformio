@@ -6,6 +6,7 @@
 #include <lvgl.h>
 #include "tabs/base_tab.h"
 #include "components/card_component/card.h"
+#include <components/weather_card/weather_card.h>
 
 class HomePage : public BaseTab
 {
@@ -15,8 +16,7 @@ public:
 
 private:
     Card card;
-    lv_obj_t *initial_left_col(lv_obj_t *content);
-    lv_obj_t *initial_right_col(lv_obj_t *content);
+    WeatherCard weatherCard;
 };
 
 #endif

@@ -13,8 +13,8 @@ static lv_obj_t *label_humidity;
 void WeatherCard::init(lv_obj_t *parent)
 {
     content = lv_obj_create(parent);
-    lv_obj_set_size(content, 120, 80);
-    lv_obj_set_style_radius(content, 16, 0);
+    lv_obj_set_size(content, lv_pct(100), lv_pct(100));
+    // lv_obj_set_style_radius(content, 16, 0);
     lv_obj_set_style_bg_color(
         content,
         lv_color_hex(0x1E293B),
@@ -53,6 +53,11 @@ void WeatherCard::init(lv_obj_t *parent)
 
 void WeatherCard::updateWeatherData(const char *weather = "Sunny")
 {
+    if (weather_icon == NULL)
+    {
+        Serial.println("Weather icon is null, cannot update weather data");
+        return;
+    }
     // update weather icon based on weather condition
     if (strcmp(weather, "Sunny") == 0)
     {
@@ -74,12 +79,22 @@ void WeatherCard::updateWeatherData(const char *weather = "Sunny")
 
 void WeatherCard::updateTemperature(char *temperature)
 {
+    if (label_temp == NULL)
+    {
+        Serial.println("Temperature label is null, cannot update temperature");
+        return;
+    }
     std::string temp_text = std::string(temperature) + "°C";
     lv_label_set_text(label_temp, temp_text.c_str());
 };
 
 void WeatherCard::updateHumidity(char *humidity)
 {
+    if (label_humidity == NULL)
+    {
+        Serial.println("Humidity label is null, cannot update humidity");
+        return;
+    }
     std::string humidity_text = std::string(humidity) + "%";
     lv_label_set_text(label_humidity, humidity_text.c_str());
 };

@@ -49,8 +49,6 @@ lv_obj_t *create_chart(
 
     lv_obj_set_style_radius(cont, 10, 0);
 
-    // lv_obj_set_style_pad_all(cont, 10, 0);
-
     lv_obj_t *txt = lv_label_create(cont);
     lv_obj_set_style_text_font(
         txt,
@@ -148,7 +146,6 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 0);
 
     //  create temp bar
-    // static lv_style_t style_indic;
     if (!style_init_done)
     {
 
@@ -176,28 +173,6 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
         0);
     lv_obj_align(temp_label, LV_ALIGN_CENTER, 0, 0);
     return cont;
-}
-
-static void btn_event_handle(lv_event_t *e)
-{
-
-    MessageEvent messageEvent;
-
-    messageEvent.type = MessageEventType::MQTT_MESSAGE;
-    strcpy(
-        messageEvent.topic,
-        Topics::Publish::HOME_LIGHT);
-
-    JsonDocument doc;
-
-    doc["status"] = "ON";
-    doc["room"] = Room::KITCHEN;
-    doc["index"] = 1;
-
-    serializeJson(doc, messageEvent.payload);
-
-    xQueueSend(mqttQueue, &messageEvent, 0);
-    Serial.println("Turn on light!!");
 }
 
 lv_obj_t *PiMonitoringTab::init(lv_obj_t *parent)
