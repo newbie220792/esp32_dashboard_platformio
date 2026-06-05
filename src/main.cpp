@@ -72,8 +72,8 @@ Arduino_GFX *gfx = new Arduino_Canvas(480 /* width */, 272 /* height */, g);
  ******************************************************************************/
 #include "touch.h"
 #include "services/wifi/wifi.h"
-#include "pages/ui_manager.h"
-#include "pages/pi_monitoring_page/pi_monitoring_page.h"
+#include "tabs/ui_manager.h"
+#include "tabs/pi_monitoring_tab/pi_monitoring_tab.h"
 #include <config/app_event.h>
 #include <config/message_event.h>
 #include "core/app_queues.h"
@@ -271,7 +271,7 @@ void lvglTask(void *pv)
 
         char *cpu_percent = appEvent.data;
         int cpu = strtol(cpu_percent, nullptr, 0);
-        PiMonitoringPage::ui_update_cpu(cpu);
+        PiMonitoringTab::ui_update_cpu(cpu);
         break;
       }
       case AppEventType::PI_MEM:
@@ -279,13 +279,13 @@ void lvglTask(void *pv)
 
         char *mem_percent = appEvent.data;
         int mem = strtol(mem_percent, nullptr, 0);
-        PiMonitoringPage::ui_update_mem(mem);
+        PiMonitoringTab::ui_update_mem(mem);
         break;
       }
       case AppEventType::PI_TEMP:
       {
         float temp = atof(appEvent.data);
-        PiMonitoringPage::ui_update_temp(temp);
+        PiMonitoringTab::ui_update_temp(temp);
         break;
       }
       case AppEventType::WEATHER:

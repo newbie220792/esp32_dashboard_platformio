@@ -3,7 +3,7 @@
 #include <lvgl.h>
 #include <Arduino.h>
 
-class BasePage
+class BaseTab
 {
 public:
     virtual lv_obj_t *init(lv_obj_t *parent) = 0;

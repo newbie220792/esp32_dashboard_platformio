@@ -1,9 +1,9 @@
-#include "pi_monitoring_page.h"
+#include "pi_monitoring_tab.h"
 #include "core/app_queues.h"
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
-#include "pages/ui_manager.h"
+#include "tabs/ui_manager.h"
 #include <config/ui_constants.h>
 #include <ArduinoJson.h>
 #include <config/room.h>
@@ -200,9 +200,9 @@ static void btn_event_handle(lv_event_t *e)
     Serial.println("Turn on light!!");
 }
 
-lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
+lv_obj_t *PiMonitoringTab::init(lv_obj_t *parent)
 {
-    Serial.println("Init PiMonitoringPage");
+    Serial.println("Init PiMonitoringTab");
     content = lv_obj_create(parent);
     lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
     lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
@@ -232,7 +232,7 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
     return content;
 }
 
-void PiMonitoringPage::ui_update_cpu(int value)
+void PiMonitoringTab::ui_update_cpu(int value)
 {
     if (cpu_chart == NULL)
         return;
@@ -252,7 +252,7 @@ void PiMonitoringPage::ui_update_cpu(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_mem(int value)
+void PiMonitoringTab::ui_update_mem(int value)
 {
     if (mem_chart == NULL)
         return;
@@ -272,7 +272,7 @@ void PiMonitoringPage::ui_update_mem(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_temp(float value)
+void PiMonitoringTab::ui_update_temp(float value)
 {
     if (temp_bar == NULL)
         return;
@@ -295,7 +295,7 @@ void PiMonitoringPage::ui_update_temp(float value)
     lv_label_set_text(temp_label, buf);
 }
 
-const char *PiMonitoringPage::getTitle()
+const char *PiMonitoringTab::getTitle()
 {
-    return "Pi Monitoring Page";
+    return "Pi Monitoring Tab";
 };

@@ -1,13 +1,13 @@
 #pragma once
 
-#ifndef LV_HOME_PAGE_H
-#define LV_HOME_PAGE_H
+#ifndef LV_HOME_TAB_H
+#define LV_HOME_TAB_H
 
 #include <lvgl.h>
-#include "pages/base_page.h"
+#include "tabs/base_tab.h"
 #include "components/card_component/card.h"
 
-class HomePage : public BasePage
+class HomePage : public BaseTab
 {
 public:
     lv_obj_t *init(lv_obj_t *parent) override;

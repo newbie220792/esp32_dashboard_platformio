@@ -1,6 +1,5 @@
-#include "home_page.h"
+#include "home_tab.h"
 #include <Arduino.h>
-#include <pages/ui_manager.h>
 
 lv_obj_t *HomePage::init(lv_obj_t *parent)
 {
