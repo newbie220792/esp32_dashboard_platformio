@@ -6,6 +6,10 @@
 #include "assets/images/cloudy.h"
 #include "assets/images/rainy.h"
 
+static lv_obj_t *weather_icon;
+static lv_obj_t *label_temp;
+static lv_obj_t *label_humidity;
+
 void WeatherCard::init(lv_obj_t *parent)
 {
     content = lv_obj_create(parent);
@@ -68,12 +72,14 @@ void WeatherCard::updateWeatherData(const char *weather = "Sunny")
     }
 };
 
-void WeatherCard::updateTemperature(uint32_t temperature)
+void WeatherCard::updateTemperature(char *temperature)
 {
-    lv_label_set_text(label_temp, (std::to_string(temperature) + "°C").c_str());
+    std::string temp_text = std::string(temperature) + "°C";
+    lv_label_set_text(label_temp, temp_text.c_str());
 };
 
-void WeatherCard::updateHumidity(uint32_t humidity)
+void WeatherCard::updateHumidity(char *humidity)
 {
-    lv_label_set_text(label_humidity, (std::to_string(humidity) + "%").c_str());
+    std::string humidity_text = std::string(humidity) + "%";
+    lv_label_set_text(label_humidity, humidity_text.c_str());
 };

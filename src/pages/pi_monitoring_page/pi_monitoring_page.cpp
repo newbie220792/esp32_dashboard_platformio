@@ -125,7 +125,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
-    lv_obj_set_size(cont, LV_PCT(100), 90);
+    lv_obj_set_size(cont, LV_PCT(100), 50);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -205,18 +205,7 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
     Serial.println("Init PiMonitoringPage");
     content = lv_obj_create(parent);
     lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
-
-    // static lv_coord_t chart_col_dsc[] = {
-    //     LV_GRID_FR(1), // 50%
-    //     LV_GRID_FR(1), // 50%
-    //     LV_GRID_TEMPLATE_LAST};
-
-    // static lv_coord_t chart_row_dsc[] = {
-    //     LV_GRID_FR(1), // hàng trên
-    //     LV_GRID_FR(1), // hàng dưới
-    //     LV_GRID_TEMPLATE_LAST};
-    // lv_obj_set_layout(content, LV_LAYOUT_GRID);
-    // lv_obj_set_grid_dsc_array(content, chart_col_dsc, chart_row_dsc);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
 
     lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
@@ -226,9 +215,6 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
         "CPU",
         lv_color_hex(0x00D0FF));
     lv_obj_align(cpu_cont, LV_ALIGN_TOP_LEFT, 0, 0);
-    // lv_obj_set_grid_cell(cpu_cont,
-    //  LV_GRID_ALIGN_STRETCH, 0, 1,
-    //  LV_GRID_ALIGN_STRETCH, 0, 1);
 
     lv_obj_t *mem_cont = create_chart(
         &mem_chart,
@@ -237,24 +223,12 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
         content,
         "MEMORY",
         lv_color_hex(0x00E676));
-    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5, 0);
-    // lv_obj_set_grid_cell(mem_cont,
-    //                      LV_GRID_ALIGN_STRETCH, 1, 1,
-    //                      LV_GRID_ALIGN_STRETCH, 0, 1);
+    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5 - 10, 0);
 
-    // lv_obj_t *temp_cont = create_temp_gauge(content);
-    // lv_obj_set_grid_cell(temp_cont,
-    //                      LV_GRID_ALIGN_STRETCH, 0, 2,
-    //                      LV_GRID_ALIGN_STRETCH, 1, 1);
+    lv_obj_t *temp_cont = create_temp_gauge(content);
+    lv_obj_align(temp_cont, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_set_scrollbar_mode(temp_cont, LV_SCROLLBAR_MODE_OFF);
 
-    // button test
-    // lv_obj_t *btn_test = lv_btn_create(content);
-    // lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_CLICKED, NULL);
-    // lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
-
-    // lv_obj_t *label = lv_label_create(btn_test);
-    // lv_label_set_text(label, "Button");
-    // lv_obj_center(label);
     return content;
 }
 

@@ -296,20 +296,27 @@ void lvglTask(void *pv)
       }
       case AppEventType::TEMPERATURE:
       {
-        float temp = atof(appEvent.data);
+        Serial.print("Update temperature: ");
+        Serial.println(appEvent.data);
+        char *temp = appEvent.data;
         WeatherCard::updateTemperature(temp);
         break;
       }
       case AppEventType::HUMIDITY:
       {
-        float humidity = atof(appEvent.data);
+        Serial.print("Update humidity: ");
+        Serial.println(appEvent.data);
+        char *humidity = appEvent.data;
         WeatherCard::updateHumidity(humidity);
         break;
       }
       default:
       {
 
-        Serial.println("Error: Invalid app event type");
+        // Serial.print("Error: Invalid app event type ");
+        // Serial.println((int)appEvent.type);
+        // Serial.print("Data: ");
+        // Serial.println(appEvent.data);
         break;
       }
       }

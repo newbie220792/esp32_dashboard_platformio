@@ -3046,5 +3046,5 @@ const lv_img_dsc_t rainy = {
   .header.w = 225,
   .header.h = 225,
   .data_size = 39189,
-  .data = rainy,
+  .data = rainy_map,
 };

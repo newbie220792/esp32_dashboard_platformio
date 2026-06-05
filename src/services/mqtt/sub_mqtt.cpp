@@ -61,7 +61,12 @@ void callback(char *topic, byte *payload, unsigned int length)
 
     strcpy(
         appEvent.data,
-        (char *)payload);
+        doc.as<String>().c_str());
+
+    Serial.print("Topic: ");
+    Serial.println(topic);
+    Serial.print("Payload: ");
+    Serial.println(doc.as<String>());
 
     xQueueSend(uiQueue, &appEvent, 0);
 }
