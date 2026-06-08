@@ -253,7 +253,6 @@ void initialUI()
 void lvglTask(void *pv)
 {
   AppEvent appEvent;
-
   while (1)
   {
     lv_timer_handler();

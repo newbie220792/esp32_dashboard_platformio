@@ -15,4 +15,5 @@ public:
     static void ui_update_temp(float value);
 
 private:
+    lv_obj_t *create_temp_gauge(lv_obj_t *parent);
 };

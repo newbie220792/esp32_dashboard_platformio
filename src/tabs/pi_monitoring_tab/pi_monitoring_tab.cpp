@@ -21,6 +21,7 @@ static lv_obj_t *temp_label;
 static lv_obj_t *temp_bar;
 
 static lv_style_t style_indic;
+
 static bool style_init_done = false;
 
 lv_obj_t *create_chart(
@@ -119,7 +120,7 @@ lv_obj_t *create_chart(
     return cont;
 }
 
-lv_obj_t *create_temp_gauge(lv_obj_t *parent)
+lv_obj_t *PiMonitoringTab::create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
@@ -156,6 +157,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
         lv_style_set_bg_grad_dir(&style_indic, LV_GRAD_DIR_HOR);
         style_init_done = true;
     }
+
     temp_bar = lv_bar_create(cont);
     lv_obj_add_style(temp_bar, &style_indic, LV_PART_INDICATOR);
     lv_obj_set_size(temp_bar, 200, 20);
