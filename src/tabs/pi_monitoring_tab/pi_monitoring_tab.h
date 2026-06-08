@@ -2,14 +2,13 @@
 
 #include <lvgl.h>
 #include <stdio.h>
-#include "pages/base_page.h"
+#include "tabs/base_tab.h"
 
-class PiMonitoringPage : public BasePage
+class PiMonitoringTab : public BaseTab
 {
 public:
-    void init(lv_obj_t *parent) override;
+    lv_obj_t *init(lv_obj_t *parent) override;
     const char *getTitle() override;
-    void destroy() override;
 
     void ui_update_cpu(int value);
     void ui_update_mem(int value);

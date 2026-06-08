@@ -1,11 +1,12 @@
-#include "pi_monitoring_page.h"
+#include "pi_monitoring_tab.h"
 #include "core/app_queues.h"
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
-#include <components/button/button.h>
-#include "pages/ui_manager.h"
+#include "tabs/ui_manager.h"
 #include <config/ui_constants.h>
+#include <ArduinoJson.h>
+#include <config/room.h>
 
 bool style_init_done = false;
 
@@ -34,8 +35,6 @@ lv_obj_t *create_chart(
     lv_obj_set_style_border_width(cont, 0, 0);
 
     lv_obj_set_style_radius(cont, 10, 0);
-
-    // lv_obj_set_style_pad_all(cont, 10, 0);
 
     lv_obj_t *txt = lv_label_create(cont);
     lv_obj_set_style_text_font(
@@ -111,7 +110,7 @@ lv_obj_t *PiMonitoringPage::create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
-    lv_obj_set_size(cont, LV_PCT(100), 90);
+    lv_obj_set_size(cont, LV_PCT(100), 50);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -134,7 +133,6 @@ lv_obj_t *PiMonitoringPage::create_temp_gauge(lv_obj_t *parent)
     lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 0);
 
     //  create temp bar
-    lv_style_t style_indic;
     if (!style_init_done)
     {
 
@@ -165,39 +163,12 @@ lv_obj_t *PiMonitoringPage::create_temp_gauge(lv_obj_t *parent)
     return cont;
 }
 
-static void btn_event_handle(lv_event_t *e)
+lv_obj_t *PiMonitoringTab::init(lv_obj_t *parent)
 {
-
-    MessageEvent messageEvent;
-
-    messageEvent.type = MessageEventType::MQTT_MESSAGE;
-    strcpy(
-        messageEvent.topic,
-        Topics::Publish::HOME_LIGHT);
-
-    strcpy(
-        messageEvent.payload,
-        "ON");
-
-    xQueueSend(mqttQueue, &messageEvent, 0);
-    Serial.println("Turn on light!!");
-}
-
-static void navigate_home_async(void *arg)
-{
-    UIManager::navigate(ScreenId::HOME_PAGE);
-}
-
-void btn_navigator_handle(lv_event_t *e)
-{
-    lv_async_call(navigate_home_async, nullptr);
-}
-
-void PiMonitoringPage::init(lv_obj_t *parent)
-{
-    Serial.println("Init PiMonitoringPage");
+    Serial.println("Init PiMonitoringTab");
     content = lv_obj_create(parent);
     lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
 
     lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
@@ -215,22 +186,16 @@ void PiMonitoringPage::init(lv_obj_t *parent)
         content,
         "MEMORY",
         lv_color_hex(0x00E676));
-    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5, 0);
+    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5 - 10, 0);
 
     lv_obj_t *temp_cont = create_temp_gauge(content);
-     lv_obj_align(mem_cont, LV_ALIGN_BOTTOM_MID, 0, UI::SCREEN_HEIGHT * 0.5);
+    lv_obj_align(temp_cont, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_set_scrollbar_mode(temp_cont, LV_SCROLLBAR_MODE_OFF);
 
-    // button navigate to home
-    lv_obj_t *btn_navigator = lv_btn_create(content);
-    lv_obj_add_event_cb(btn_navigator, btn_navigator_handle, LV_EVENT_PRESSED, NULL);
-    lv_obj_align(btn_navigator, LV_ALIGN_CENTER, 0, 0);
-
-    lv_obj_t *labelNavigator = lv_label_create(btn_navigator);
-    lv_label_set_text(labelNavigator, "To Home");
-    lv_obj_center(labelNavigator);
+    return content;
 }
 
-void PiMonitoringPage::ui_update_cpu(int value)
+void PiMonitoringTab::ui_update_cpu(int value)
 {
     if (cpu_chart == NULL)
         return;
@@ -250,7 +215,7 @@ void PiMonitoringPage::ui_update_cpu(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_mem(int value)
+void PiMonitoringTab::ui_update_mem(int value)
 {
     if (mem_chart == NULL)
         return;
@@ -270,7 +235,7 @@ void PiMonitoringPage::ui_update_mem(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_temp(float value)
+void PiMonitoringTab::ui_update_temp(float value)
 {
     if (temp_bar == NULL)
         return;
@@ -293,22 +258,7 @@ void PiMonitoringPage::ui_update_temp(float value)
     lv_label_set_text(temp_label, buf);
 }
 
-const char *PiMonitoringPage::getTitle()
+const char *PiMonitoringTab::getTitle()
 {
-    return "Pi Monitoring Page";
+    return "Pi Monitoring Tab";
 };
-
-void PiMonitoringPage::destroy()
-{
-    cpu_chart = nullptr;
-    cpu_ser = nullptr;
-    cpu_label = nullptr;
-    mem_chart = nullptr;
-    mem_ser = nullptr;
-    mem_label = nullptr;
-    temp_label = nullptr;
-    temp_bar = nullptr;
-    content = nullptr;
-    title = nullptr;
-    Serial.println("destroy pi monitor page");
-}

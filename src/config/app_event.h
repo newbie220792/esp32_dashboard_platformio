@@ -6,6 +6,12 @@ enum class AppEventType
     PI_CPU,
     PI_MEM,
     PI_TEMP,
+    PI_DISK,
+    WEATHER,
+    TEMPERATURE,
+    HUMIDITY,
+    RAIN,
+    IS_DAY,
     UNKNOW,
 };
 

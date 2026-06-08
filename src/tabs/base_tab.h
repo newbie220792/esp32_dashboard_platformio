@@ -3,11 +3,10 @@
 #include <lvgl.h>
 #include <Arduino.h>
 
-class BasePage
+class BaseTab
 {
 public:
-    virtual void init(lv_obj_t *parent) = 0;
-    virtual void destroy() = 0;
+    virtual lv_obj_t *init(lv_obj_t *parent) = 0;
     virtual const char *getTitle() = 0;
 
     lv_obj_t *getContent()

@@ -5,7 +5,7 @@ extern "C"
 {
 #endif
 
-    LV_IMG_DECLARE(upload_icon);
+    LV_IMG_DECLARE(rainy);
 
 #ifdef __cplusplus
 }
