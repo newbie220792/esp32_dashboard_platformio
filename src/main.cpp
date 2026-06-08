@@ -311,7 +311,6 @@ void lvglTask(void *pv)
       }
       default:
       {
-
         // Serial.print("Error: Invalid app event type ");
         // Serial.println((int)appEvent.type);
         // Serial.print("Data: ");
