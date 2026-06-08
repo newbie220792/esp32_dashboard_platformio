@@ -8,7 +8,21 @@
 #include <ArduinoJson.h>
 #include <config/room.h>
 
-bool style_init_done = false;
+static lv_obj_t *cpu_chart;
+static lv_obj_t *mem_chart;
+
+static lv_chart_series_t *cpu_ser;
+static lv_chart_series_t *mem_ser;
+
+static lv_obj_t *cpu_label;
+static lv_obj_t *mem_label;
+
+static lv_obj_t *temp_label;
+static lv_obj_t *temp_bar;
+
+static lv_style_t style_indic;
+
+static bool style_init_done = false;
 
 lv_obj_t *create_chart(
     lv_obj_t **chart,
@@ -106,7 +120,7 @@ lv_obj_t *create_chart(
     return cont;
 }
 
-lv_obj_t *PiMonitoringPage::create_temp_gauge(lv_obj_t *parent)
+lv_obj_t *PiMonitoringTab::create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
