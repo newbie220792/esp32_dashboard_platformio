@@ -1,9 +1,9 @@
-#include "pi_monitoring_page.h"
+#include "pi_monitoring_tab.h"
 #include "core/app_queues.h"
 #include <config/message_event.h>
 #include <config/topic.h>
 #include <Arduino.h>
-#include "pages/ui_manager.h"
+#include "tabs/ui_manager.h"
 #include <config/ui_constants.h>
 #include <ArduinoJson.h>
 #include <config/room.h>
@@ -48,8 +48,6 @@ lv_obj_t *create_chart(
     lv_obj_set_style_border_width(cont, 0, 0);
 
     lv_obj_set_style_radius(cont, 10, 0);
-
-    // lv_obj_set_style_pad_all(cont, 10, 0);
 
     lv_obj_t *txt = lv_label_create(cont);
     lv_obj_set_style_text_font(
@@ -125,7 +123,7 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
 {
     lv_obj_t *cont = lv_obj_create(parent);
 
-    lv_obj_set_size(cont, LV_PCT(100), 90);
+    lv_obj_set_size(cont, LV_PCT(100), 50);
 
     lv_obj_set_style_bg_color(
         cont,
@@ -148,7 +146,6 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     lv_obj_align(txt, LV_ALIGN_LEFT_MID, 15, 0);
 
     //  create temp bar
-    // static lv_style_t style_indic;
     if (!style_init_done)
     {
 
@@ -178,45 +175,12 @@ lv_obj_t *create_temp_gauge(lv_obj_t *parent)
     return cont;
 }
 
-static void btn_event_handle(lv_event_t *e)
+lv_obj_t *PiMonitoringTab::init(lv_obj_t *parent)
 {
-
-    MessageEvent messageEvent;
-
-    messageEvent.type = MessageEventType::MQTT_MESSAGE;
-    strcpy(
-        messageEvent.topic,
-        Topics::Publish::HOME_LIGHT);
-
-    JsonDocument doc;
-
-    doc["status"] = "ON";
-    doc["room"] = Room::KITCHEN;
-    doc["index"] = 1;
-
-    serializeJson(doc, messageEvent.payload);
-
-    xQueueSend(mqttQueue, &messageEvent, 0);
-    Serial.println("Turn on light!!");
-}
-
-lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
-{
-    Serial.println("Init PiMonitoringPage");
+    Serial.println("Init PiMonitoringTab");
     content = lv_obj_create(parent);
     lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
-
-    // static lv_coord_t chart_col_dsc[] = {
-    //     LV_GRID_FR(1), // 50%
-    //     LV_GRID_FR(1), // 50%
-    //     LV_GRID_TEMPLATE_LAST};
-
-    // static lv_coord_t chart_row_dsc[] = {
-    //     LV_GRID_FR(1), // hàng trên
-    //     LV_GRID_FR(1), // hàng dưới
-    //     LV_GRID_TEMPLATE_LAST};
-    // lv_obj_set_layout(content, LV_LAYOUT_GRID);
-    // lv_obj_set_grid_dsc_array(content, chart_col_dsc, chart_row_dsc);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
 
     lv_obj_t *cpu_cont = create_chart(
         &cpu_chart,
@@ -226,9 +190,6 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
         "CPU",
         lv_color_hex(0x00D0FF));
     lv_obj_align(cpu_cont, LV_ALIGN_TOP_LEFT, 0, 0);
-    // lv_obj_set_grid_cell(cpu_cont,
-    //  LV_GRID_ALIGN_STRETCH, 0, 1,
-    //  LV_GRID_ALIGN_STRETCH, 0, 1);
 
     lv_obj_t *mem_cont = create_chart(
         &mem_chart,
@@ -237,28 +198,16 @@ lv_obj_t *PiMonitoringPage::init(lv_obj_t *parent)
         content,
         "MEMORY",
         lv_color_hex(0x00E676));
-    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5, 0);
-    // lv_obj_set_grid_cell(mem_cont,
-    //                      LV_GRID_ALIGN_STRETCH, 1, 1,
-    //                      LV_GRID_ALIGN_STRETCH, 0, 1);
+    lv_obj_align(mem_cont, LV_ALIGN_TOP_LEFT, UI::SCREEN_WIDTH * 0.5 - 10, 0);
 
-    // lv_obj_t *temp_cont = create_temp_gauge(content);
-    // lv_obj_set_grid_cell(temp_cont,
-    //                      LV_GRID_ALIGN_STRETCH, 0, 2,
-    //                      LV_GRID_ALIGN_STRETCH, 1, 1);
+    lv_obj_t *temp_cont = create_temp_gauge(content);
+    lv_obj_align(temp_cont, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_set_scrollbar_mode(temp_cont, LV_SCROLLBAR_MODE_OFF);
 
-    // button test
-    // lv_obj_t *btn_test = lv_btn_create(content);
-    // lv_obj_add_event_cb(btn_test, btn_event_handle, LV_EVENT_CLICKED, NULL);
-    // lv_obj_align(btn_test, LV_ALIGN_CENTER, 0, -40);
-
-    // lv_obj_t *label = lv_label_create(btn_test);
-    // lv_label_set_text(label, "Button");
-    // lv_obj_center(label);
     return content;
 }
 
-void PiMonitoringPage::ui_update_cpu(int value)
+void PiMonitoringTab::ui_update_cpu(int value)
 {
     if (cpu_chart == NULL)
         return;
@@ -278,7 +227,7 @@ void PiMonitoringPage::ui_update_cpu(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_mem(int value)
+void PiMonitoringTab::ui_update_mem(int value)
 {
     if (mem_chart == NULL)
         return;
@@ -298,7 +247,7 @@ void PiMonitoringPage::ui_update_mem(int value)
         value);
 }
 
-void PiMonitoringPage::ui_update_temp(float value)
+void PiMonitoringTab::ui_update_temp(float value)
 {
     if (temp_bar == NULL)
         return;
@@ -321,7 +270,7 @@ void PiMonitoringPage::ui_update_temp(float value)
     lv_label_set_text(temp_label, buf);
 }
 
-const char *PiMonitoringPage::getTitle()
+const char *PiMonitoringTab::getTitle()
 {
-    return "Pi Monitoring Page";
+    return "Pi Monitoring Tab";
 };

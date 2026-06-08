@@ -6,8 +6,8 @@ extern "C"
 {
 #endif
 
-#if !defined LV_SYMBOL_CLOUD
-#define LV_SYMBOL_CLOUD "\xEF\x83\x82"
+#if !defined LV_SYMBOL_CLOUDY
+#define LV_SYMBOL_CLOUDY "\xEF\x83\x82"
 #endif
 
 #if !defined LV_SYMBOL_LIGHT

@@ -1,6 +1,6 @@
-#include "light_control_page.h"
+#include "light_control_tab.h"
 
-lv_obj_t *LightControlPage::init(lv_obj_t *parent)
+lv_obj_t *LightControlTab::init(lv_obj_t *parent)
 {
     // initial content
     content = lv_obj_create(parent);
@@ -18,7 +18,7 @@ lv_obj_t *LightControlPage::init(lv_obj_t *parent)
     return content;
 };
 
-const char *LightControlPage::getTitle()
+const char *LightControlTab::getTitle()
 {
     return "Light Control Page";
 };
