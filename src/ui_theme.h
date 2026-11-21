@@ -27,6 +27,7 @@
 #define FONT_M   (&lv_font_montserrat_14)
 #define FONT_L   (&lv_font_montserrat_20)
 #define FONT_XL  (&lv_font_montserrat_40)
+#define FONT_GAUGE (&lv_font_montserrat_24)  // value inside the Pi 5 arcs
 
 // Plain container: no theme styles, transparent, not scrollable/clickable.
 lv_obj_t *ui_box(lv_obj_t *parent);

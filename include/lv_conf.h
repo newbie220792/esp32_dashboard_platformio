@@ -36,12 +36,13 @@
 #define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_40 1
 #define LV_FONT_DEFAULT &lv_font_montserrat_14
 
-/* Widgets used: obj, label, arc, chart, tileview (others left at defaults) */
+/* Widgets used: obj, label, arc, tileview (others left at defaults) */
 #define LV_USE_ARC 1
-#define LV_USE_CHART 1
+#define LV_USE_CHART 0
 #define LV_USE_LABEL 1
 #define LV_USE_TILEVIEW 1
 #define LV_USE_CALENDAR 0
