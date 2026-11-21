@@ -8,3 +8,5 @@ logs
 compile_commands.json
 .cache
 .idea
+# credentials
+include/secrets.h
