@@ -27,3 +27,12 @@ bool mqtt_topic_matches(const char *filter, const char *topic);
 
 // Topic-segment safety: non-empty and no '/', '+', '#'.
 bool is_valid_topic_id(const char *id);
+
+// Wi-Fi failure reason from the last STA disconnect reason code
+// (wifi_err_reason_t, 0 = none seen) and Arduino wl_status_t value.
+WifiFailReason wifi_fail_reason(uint8_t disconnect_reason, int wl_status);
+const char *wifi_fail_reason_text(WifiFailReason r);
+
+// Wi-Fi join QR payload: WIFI:T:WPA;S:<ssid>;P:<pass>;;  (T:nopass when pass
+// is empty). Escapes \ ; , : " as the format requires. False if it doesn't fit.
+bool build_wifi_qr(char *buf, size_t buf_len, const char *ssid, const char *pass);

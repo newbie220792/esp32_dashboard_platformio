@@ -10,6 +10,7 @@
 
 enum class AppEventType : uint8_t {
     WifiState,     // .flag = connected
+    WifiSetup,     // .wifi       (setup flow screen state)
     MqttState,     // .flag = connected
     PiStats,       // .pi
     Services,      // .services   (heap; receiver takes ownership, delete)
@@ -28,6 +29,7 @@ struct AppEvent {
         HomeConfig  *home;
         SwitchState  sw;
         WeatherData  weather;
+        WifiSetupInfo wifi;
     };
 };
 

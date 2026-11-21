@@ -9,6 +9,7 @@
 #include "ui_monitor.h"
 #include "ui_theme.h"
 #include "ui_weather.h"
+#include "ui_wifi.h"
 
 enum { TILE_MONITOR, TILE_WEATHER, TILE_HOME, TILE_COUNT };
 
@@ -17,6 +18,7 @@ static lv_obj_t *s_tiles[TILE_COUNT];
 static lv_obj_t *s_pills[TILE_COUNT];
 static lv_obj_t *s_dot, *s_title, *s_wifi, *s_clock;
 static lv_timer_t *s_rotate_timer;
+static lv_obj_t *s_main_scr, *s_wifi_scr;
 
 static bool s_wifi_ok = false;
 static bool s_mqtt_ok = false;
@@ -143,6 +145,18 @@ void ui_init() {
 #if AUTO_ROTATE_MS > 0
     s_rotate_timer = lv_timer_create(rotate_timer_cb, AUTO_ROTATE_MS, nullptr);
 #endif
+
+    // Wi-Fi setup screens live on their own screen; the main UI stays hidden
+    // until the setup flow reports Connected.
+    s_main_scr = scr;
+    s_wifi_scr = ui_wifi_create();
+    lv_screen_load(s_wifi_scr);
+}
+
+static void on_wifi_setup(const WifiSetupInfo &info) {
+    ui_wifi_apply(info);
+    lv_obj_t *want = info.state == WifiSetupState::Connected ? s_main_scr : s_wifi_scr;
+    if (lv_screen_active() != want) lv_screen_load(want);
 }
 
 void ui_next_tile() {
@@ -158,6 +172,7 @@ void ui_process_events() {
     while (app_events_receive(ev, 0)) {
         switch (ev.type) {
         case AppEventType::WifiState:    s_wifi_ok = ev.flag; status_dirty = true; break;
+        case AppEventType::WifiSetup:    on_wifi_setup(ev.wifi); break;
         case AppEventType::MqttState:
             s_mqtt_ok = ev.flag;
             ui_home_set_mqtt(ev.flag);

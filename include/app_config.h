@@ -40,6 +40,13 @@
 #define NAV_BUTTON_PIN     0       // BOOT button, active low; -1 to disable
 #define AUTO_ROTATE_MS     0       // switch tile automatically (ms); 0 = off
 
+// ---------------- Wi-Fi setup (WiFiManager portal) ----------------
+#define WIFI_CONNECT_TIMEOUT_MS 18000   // per network, secrets.h / NVS
+#define WIFI_FAIL_COUNTDOWN_MS  5000    // screen 4 -> portal
+#define SETUP_AP_SSID           "ESP32-Setup"
+#define SETUP_AP_IP             "192.168.4.1"
+#define WIFI_RESET_HOLD_MS      5000    // hold BOOT: erase saved Wi-Fi, open portal
+
 // ---------------- MQTT ----------------
 #define MQTT_TOPIC_STATS       "pi5/stats"
 #define MQTT_TOPIC_SERVICES    "pi5/services"

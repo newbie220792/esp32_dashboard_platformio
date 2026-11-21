@@ -58,3 +58,18 @@ void icon_line(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
     d.p2.y = Y(c, y2);
     lv_draw_line(c.layer, &d);
 }
+
+void icon_arc(const IconCtx &c, int32_t cx, int32_t cy, int32_t r, int32_t w, int32_t start, int32_t end,
+              lv_color_t col) {
+    lv_draw_arc_dsc_t d;
+    lv_draw_arc_dsc_init(&d);
+    d.color = col;
+    d.width = LV_MAX(1, w * c.s / 100);
+    d.center.x = X(c, cx);
+    d.center.y = Y(c, cy);
+    d.radius = (uint16_t)(r * c.s / 100);
+    d.start_angle = start;
+    d.end_angle = end;
+    d.rounded = 1;
+    lv_draw_arc(c.layer, &d);
+}

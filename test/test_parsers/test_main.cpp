@@ -173,6 +173,30 @@ static void test_topic_matches() {
     TEST_ASSERT_TRUE(mqtt_topic_matches("home/#", "home/living/a/1/state"));
 }
 
+static void test_wifi_fail_reason() {
+    TEST_ASSERT_EQUAL((int)WifiFailReason::NotFound, (int)wifi_fail_reason(201, 6));
+    TEST_ASSERT_EQUAL((int)WifiFailReason::WrongPassword, (int)wifi_fail_reason(15, 6));
+    TEST_ASSERT_EQUAL((int)WifiFailReason::WrongPassword, (int)wifi_fail_reason(202, 6));
+    TEST_ASSERT_EQUAL((int)WifiFailReason::WrongPassword, (int)wifi_fail_reason(204, 6));
+    TEST_ASSERT_EQUAL((int)WifiFailReason::ConnectFailed, (int)wifi_fail_reason(203, 6));
+    TEST_ASSERT_EQUAL((int)WifiFailReason::NotFound, (int)wifi_fail_reason(0, 1));      // WL_NO_SSID_AVAIL
+    TEST_ASSERT_EQUAL((int)WifiFailReason::ConnectFailed, (int)wifi_fail_reason(0, 4)); // WL_CONNECT_FAILED
+    TEST_ASSERT_EQUAL((int)WifiFailReason::Timeout, (int)wifi_fail_reason(0, 6));       // WL_DISCONNECTED
+    TEST_ASSERT_EQUAL_STRING("Wrong password", wifi_fail_reason_text(WifiFailReason::WrongPassword));
+}
+
+static void test_wifi_qr() {
+    char buf[96];
+    TEST_ASSERT_TRUE(build_wifi_qr(buf, sizeof buf, "ESP32-Setup", ""));
+    TEST_ASSERT_EQUAL_STRING("WIFI:T:nopass;S:ESP32-Setup;;", buf);
+    TEST_ASSERT_TRUE(build_wifi_qr(buf, sizeof buf, "ESP32-Setup", "secret123"));
+    TEST_ASSERT_EQUAL_STRING("WIFI:T:WPA;S:ESP32-Setup;P:secret123;;", buf);
+    TEST_ASSERT_TRUE(build_wifi_qr(buf, sizeof buf, "a;b", "p:w\\d"));
+    TEST_ASSERT_EQUAL_STRING("WIFI:T:WPA;S:a\\;b;P:p\\:w\\\\d;;", buf);
+    char small[16];
+    TEST_ASSERT_FALSE(build_wifi_qr(small, sizeof small, "ESP32-Setup", "secret123"));
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_pi_stats);
@@ -188,5 +212,7 @@ int main() {
     RUN_TEST(test_switch_state_rejects);
     RUN_TEST(test_set_topic);
     RUN_TEST(test_topic_matches);
+    RUN_TEST(test_wifi_fail_reason);
+    RUN_TEST(test_wifi_qr);
     return UNITY_END();
 }

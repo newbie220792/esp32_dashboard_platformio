@@ -95,3 +95,22 @@ struct WeatherData {
     WeatherHour hours[WEATHER_HOURS];
     uint8_t hour_count;
 };
+
+// ---------------- Wi-Fi setup flow (wifi_setup.cpp -> ui_wifi.cpp) ----------------
+enum class WifiSetupState : uint8_t {
+    Connecting,       // trying secrets.h / saved network (screen: spinner)
+    FailedSaved,      // screen 4: countdown, Retry / Setup now
+    Portal,           // screen 5: AP + captive portal open, QR
+    ConnectingNew,    // credentials submitted in the portal, trying them
+    FailedNew,        // screen 6: portal still open, Attempt N
+    Connected,        // main UI
+};
+
+enum class WifiFailReason : uint8_t { None, NotFound, WrongPassword, ConnectFailed, Timeout };
+
+struct WifiSetupInfo {
+    WifiSetupState state;
+    WifiFailReason reason;
+    uint16_t       attempt;    // portal attempts so far (FailedNew / ConnectingNew)
+    char           ssid[33];   // network being tried / that failed
+};

@@ -16,12 +16,12 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
   SCLK=12 MOSI=11 MISO=13 CS=10 DC=9 RST=14 BL=21 (cần kiểm tra lại với mạch thật)
 - Cảm ứng: GT911 (I2C, thư viện TouchLib) SDA=8 SCL=4 RST=38 INT=3. Hiệu chỉnh bằng `TOUCH_DEBUG`
   và `TOUCH_RAW_W/H`, `TOUCH_SWAP_XY`, `TOUCH_INVERT_X/Y`.
-- Nút BOOT (GPIO0): chuyển màn.
+- Nút BOOT (GPIO0): bấm nhanh để chuyển màn; giữ 5 giây để xóa Wi-Fi đã lưu và mở chế độ cấu hình.
 
 ## Công nghệ
 
 - PlatformIO + Arduino framework
-- LVGL 9.x, LovyanGFX (driver màn hình), TouchLib (cảm ứng)
+- LVGL 9.x, LovyanGFX (driver màn hình), TouchLib (cảm ứng), WiFiManager (cổng cấu hình Wi-Fi)
 - Thư viện MQTT: PubSubClient, JSON: ArduinoJson
 - Thời gian: NTP, múi giờ Asia/Ho_Chi_Minh
 
@@ -50,13 +50,39 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - `src/models.h`, `src/parsers.*`: struct dữ liệu và hàm parse JSON/topic thuần (không phụ thuộc
   Arduino/LVGL). Env `native` chỉ biên dịch `parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
 - `src/app_events.*`: hàng đợi từ task mạng sang task LVGL
+- `src/wifi_setup.*`: luồng cấu hình Wi-Fi lúc khởi động (máy trạng thái, WiFiManager, NVS)
+- `src/ui_wifi.*`: các màn Wi-Fi (Connecting, màn 4, 5, 6) trên một screen LVGL riêng
 - `src/wifi_manager.*`, `src/mqtt.*`, `src/weather.*`: mạng và dữ liệu
   (không đặt tên `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>`)
 - `src/display.cpp`, `src/touch.cpp`: driver màn hình và cảm ứng
 - `include/app_config.h`: chân, topic, vị trí, chu kỳ, thời gian chờ
 - `include/lv_conf.h`: cấu hình LVGL
-- `include/secrets.h`: Wi-Fi, MQTT (không commit, không đọc). Mẫu: `include/secrets.example.h`
+- `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD` (không commit, không đọc). Mẫu: `include/secrets.example.h`
 - `tools/`: script Python cho Pi 5 và giả lập công tắc
+
+## Wi-Fi
+
+Task `wifi` (core 0) chạy `wifi_setup_run()` cho đến khi kết nối được, sau đó mới giám sát kết nối lại và cài NTP.
+Mỗi lần đổi trạng thái được gửi qua `AppEventType::WifiSetup`; `ui.cpp` hiện screen Wi-Fi và chỉ chuyển sang
+giao diện chính (tileview) khi nhận `Connected`.
+
+1. `CONNECTING`: thử `secrets.h` trước (**`secrets.h` luôn thắng**), nếu thất bại thì thử mạng đã lưu trong NVS
+   (namespace `wifi_cfg`, chỉ chứa mạng nhập qua portal). Timeout `WIFI_CONNECT_TIMEOUT_MS` (18 giây) mỗi mạng;
+   dừng sớm khi cùng một lỗi rõ ràng (không thấy mạng, sai mật khẩu) lặp lại 3 lần.
+2. `FAILED_SAVED` (màn 4): báo lý do của mạng `secrets.h`, đếm ngược 5 giây rồi mở portal. `Retry` thử lại bước 1,
+   `Setup now` mở portal ngay.
+3. `PORTAL` (màn 5): AP `ESP32-Setup` (mật khẩu `SETUP_AP_PASSWORD`, trống thì là mạng mở) + captive portal tại
+   `192.168.4.1`. WiFiManager chạy không chặn (`setConfigPortalBlocking(false)`, `process()` mỗi 10 ms).
+4. `CONNECTING_NEW`: báo từ `setPreSaveConfigCallback`, đọc SSID và mật khẩu từ `server->arg("s"/"p")`, tăng `Attempt`.
+   Lần thử kết nối chạy đồng bộ bên trong `process()` (chỉ chặn task `wifi`, giao diện vẫn chạy).
+5. Thành công: lưu vào NVS, tắt portal, `Connected`. Thất bại: `FAILED_NEW` (màn 6), portal vẫn mở, lặp lại không giới hạn.
+
+- Lý do lỗi lấy từ `reason` của `WIFI_EVENT_STA_DISCONNECTED`, dự phòng bằng `WiFi.status()`
+  (`wifi_fail_reason()` trong `parsers.cpp`, có test).
+- Mã QR: `build_wifi_qr()` (`WIFI:T:WPA;S:..;P:..;;` hoặc `T:nopass`, có escape ký tự đặc biệt).
+- Giữ BOOT 5 giây (`WifiCmd::ResetAndPortal`): xóa NVS rồi mở portal, kể cả khi đang ở giao diện chính.
+- Sau khi đã vào giao diện chính, mất Wi-Fi chỉ làm icon chuyển xám và tự kết nối lại, không quay về màn cấu hình.
+- `WiFi.persistent(false)`: thông tin Wi-Fi chỉ nằm trong NVS của mình.
 
 ## Dữ liệu (MQTT)
 

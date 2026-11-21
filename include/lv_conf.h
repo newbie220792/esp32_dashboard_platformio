@@ -39,11 +39,14 @@
 #define LV_FONT_MONTSERRAT_40 1
 #define LV_FONT_DEFAULT &lv_font_montserrat_14
 
-/* Widgets used: obj, label, arc, tileview (others left at defaults) */
+/* Widgets used: obj, label, arc, tileview, spinner, bar, qrcode */
 #define LV_USE_ARC 1
 #define LV_USE_CHART 0
 #define LV_USE_LABEL 1
 #define LV_USE_TILEVIEW 1
+#define LV_USE_SPINNER 1
+#define LV_USE_BAR 1
+#define LV_USE_QRCODE 1   /* Wi-Fi setup screen */
 #define LV_USE_CALENDAR 0
 #define LV_USE_KEYBOARD 0
 #define LV_USE_SPINBOX 0

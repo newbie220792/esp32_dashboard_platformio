@@ -4,7 +4,8 @@
 //   core 1  "lvgl"    : the only task that calls LVGL. Drains the app event
 //                       queue, runs lv_timer_handler() (which also polls the
 //                       GT911 touch panel), polls the nav button.
-//   core 0  "wifi"    : connection supervisor, NTP setup
+//   core 0  "wifi"    : boot-time setup flow (secrets.h -> NVS -> WiFiManager
+//                       portal), then reconnect supervision, NTP setup
 //           "mqtt"    : PubSubClient loop, parses pi5/stats
 //           "weather" : HTTPS poll every 10 min
 //   Network tasks only post copies of their data to the queue (app_events).
@@ -20,16 +21,32 @@
 #include "ui.h"
 #include "weather.h"
 #include "wifi_manager.h"
+#include "wifi_setup.h"
 
+// BOOT button: short press = next tile; hold WIFI_RESET_HOLD_MS = erase the
+// saved Wi-Fi and open the setup portal.
 static void nav_button_poll() {
 #if NAV_BUTTON_PIN >= 0
-    static bool last = true;          // pulled up = released
-    static uint32_t last_change = 0;
-    bool now = digitalRead(NAV_BUTTON_PIN);
-    if (now != last && millis() - last_change > 30) {
-        last_change = millis();
-        last = now;
-        if (!now) ui_next_tile();     // falling edge = press
+    static bool pressed = false;
+    static bool long_fired = false;
+    static uint32_t down_ms = 0, last_change = 0;
+    const bool down = digitalRead(NAV_BUTTON_PIN) == LOW;
+    const uint32_t now = millis();
+
+    if (down != pressed && now - last_change > 30) {   // debounce
+        last_change = now;
+        pressed = down;
+        if (down) {
+            down_ms = now;
+            long_fired = false;
+        } else if (!long_fired) {
+            ui_next_tile();                             // released before the hold
+        }
+    }
+    if (pressed && !long_fired && now - down_ms >= WIFI_RESET_HOLD_MS) {
+        long_fired = true;
+        Serial.println("[main] BOOT held: resetting Wi-Fi");
+        wifi_setup_command(WifiCmd::ResetAndPortal);
     }
 #endif
 }

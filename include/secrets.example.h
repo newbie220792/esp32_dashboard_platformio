@@ -8,3 +8,7 @@
 #define MQTT_PORT      1883
 #define MQTT_USER      ""               // empty = anonymous
 #define MQTT_PASSWORD  ""
+
+// Password of the "ESP32-Setup" configuration access point (8-63 chars).
+// Shown on the setup screen and in its QR code. "" = open network.
+#define SETUP_AP_PASSWORD  "change-me-123"

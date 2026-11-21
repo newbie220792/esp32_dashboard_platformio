@@ -1,7 +1,8 @@
 #pragma once
 #include <freertos/FreeRTOS.h>
 
-// Starts Wi-Fi STA + a supervisor task, configures NTP/timezone.
+// Starts Wi-Fi STA and the wifi task: boot-time setup flow (wifi_setup.*),
+// then reconnect supervision and NTP/timezone.
 // (Named wifi_manager to avoid clashing with <WiFi.h> on case-insensitive FS.)
 void wifi_start();
 bool wifi_is_connected();

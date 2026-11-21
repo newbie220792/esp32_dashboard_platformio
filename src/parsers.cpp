@@ -167,3 +167,56 @@ bool build_switch_set_topic(char *buf, size_t buf_len, const char *room, const c
     int n = snprintf(buf, buf_len, "home/%s/%s/%u/set", room, panel, (unsigned)id);
     return n > 0 && (size_t)n < buf_len;
 }
+
+WifiFailReason wifi_fail_reason(uint8_t reason, int wl_status) {
+    switch (reason) {
+    case 201:            // WIFI_REASON_NO_AP_FOUND
+        return WifiFailReason::NotFound;
+    case 2:              // WIFI_REASON_AUTH_EXPIRE
+    case 15:             // WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT
+    case 202:            // WIFI_REASON_AUTH_FAIL
+    case 204:            // WIFI_REASON_HANDSHAKE_TIMEOUT
+        return WifiFailReason::WrongPassword;
+    case 0:
+        break;
+    default:
+        return WifiFailReason::ConnectFailed;
+    }
+    if (wl_status == 1) return WifiFailReason::NotFound;        // WL_NO_SSID_AVAIL
+    if (wl_status == 4) return WifiFailReason::ConnectFailed;   // WL_CONNECT_FAILED
+    return WifiFailReason::Timeout;
+}
+
+const char *wifi_fail_reason_text(WifiFailReason r) {
+    switch (r) {
+    case WifiFailReason::NotFound:      return "Network not found";
+    case WifiFailReason::WrongPassword: return "Wrong password";
+    case WifiFailReason::ConnectFailed: return "Connection failed";
+    case WifiFailReason::Timeout:       return "Timeout";
+    default:                            return "";
+    }
+}
+
+static bool qr_append(char *buf, size_t buf_len, size_t &pos, const char *s, bool escape) {
+    for (; *s; s++) {
+        if (escape && strchr("\\;,:\"", *s)) {
+            if (pos + 1 >= buf_len) return false;
+            buf[pos++] = '\\';
+        }
+        if (pos + 1 >= buf_len) return false;
+        buf[pos++] = *s;
+    }
+    buf[pos] = '\0';
+    return true;
+}
+
+bool build_wifi_qr(char *buf, size_t buf_len, const char *ssid, const char *pass) {
+    if (!buf || buf_len == 0) return false;
+    size_t pos = 0;
+    buf[0] = '\0';
+    const bool open = !pass || !*pass;
+    return qr_append(buf, buf_len, pos, open ? "WIFI:T:nopass;S:" : "WIFI:T:WPA;S:", false) &&
+           qr_append(buf, buf_len, pos, ssid, true) &&
+           (open || (qr_append(buf, buf_len, pos, ";P:", false) && qr_append(buf, buf_len, pos, pass, true))) &&
+           qr_append(buf, buf_len, pos, ";;", false);
+}
