@@ -2,7 +2,8 @@
 //
 // Threading model
 //   core 1  "lvgl"    : the only task that calls LVGL. Drains the app event
-//                       queue, runs lv_timer_handler(), polls the nav button.
+//                       queue, runs lv_timer_handler() (which also polls the
+//                       GT911 touch panel), polls the nav button.
 //   core 0  "wifi"    : connection supervisor, NTP setup
 //           "mqtt"    : PubSubClient loop, parses pi5/stats
 //           "weather" : HTTPS poll every 10 min
@@ -15,6 +16,7 @@
 #include "app_events.h"
 #include "display.h"
 #include "mqtt.h"
+#include "touch.h"
 #include "ui.h"
 #include "weather.h"
 #include "wifi_manager.h"
@@ -51,6 +53,7 @@ void setup() {
 
     app_events_init();
     display_init();
+    touch_init();
     ui_init();   // built before the LVGL task starts, so no race
 
     xTaskCreatePinnedToCore(lvgl_task, "lvgl", 8192, nullptr, 4, nullptr, 1);

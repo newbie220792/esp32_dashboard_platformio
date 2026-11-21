@@ -19,9 +19,26 @@
 #define SCREEN_W 320
 #define SCREEN_H 240
 
-// ---------------- Navigation (no touch panel) ----------------
+// ---------------- Touch: GT911 via TouchLib (I2C) ----------------
+#define TOUCH_ENABLED   1
+#define TOUCH_PIN_SDA   8
+#define TOUCH_PIN_SCL   4
+#define TOUCH_PIN_RST   38      // -1 if not wired
+#define TOUCH_PIN_INT   3       // unused (polled), kept for reference
+#define TOUCH_I2C_ADDR  0x5D    // GT911_SLAVE_ADDRESS1 (0x14 = ADDRESS2)
+// Raw coordinate range reported by the controller, and how it maps onto the
+// 320x240 landscape screen. Set TOUCH_DEBUG 1 to print raw points on Serial,
+// then tap the corners and adjust.
+#define TOUCH_RAW_W     320
+#define TOUCH_RAW_H     240
+#define TOUCH_SWAP_XY   0
+#define TOUCH_INVERT_X  0
+#define TOUCH_INVERT_Y  0
+#define TOUCH_DEBUG     0
+
+// ---------------- Navigation ----------------
 #define NAV_BUTTON_PIN     0       // BOOT button, active low; -1 to disable
-#define AUTO_ROTATE_MS     15000   // switch tile automatically; 0 = off
+#define AUTO_ROTATE_MS     0       // switch tile automatically (ms); 0 = off
 
 // ---------------- MQTT ----------------
 #define MQTT_TOPIC_STATS   "pi5/stats"
