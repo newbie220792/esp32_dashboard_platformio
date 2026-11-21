@@ -16,7 +16,7 @@ static String build_url() {
     snprintf(url, sizeof url,
              "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
              "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m"
-             "&hourly=temperature_2m,weather_code,is_day"
+             "&hourly=temperature_2m,weather_code,is_day,precipitation_probability"
              "&forecast_hours=6&wind_speed_unit=kmh&timeformat=unixtime&timezone=Asia%%2FHo_Chi_Minh",
              (double)WEATHER_LAT, (double)WEATHER_LON);
     return String(url);
@@ -56,13 +56,18 @@ static bool fetch(WeatherData &out) {
     out.wind_kmh = cur["wind_speed_10m"] | 0.0f;
     out.code = cur["weather_code"] | 0;
     out.is_day = (cur["is_day"] | 1) != 0;
+    out.rain_chance = -1;
 
     JsonArray times = doc["hourly"]["time"];
     JsonArray temps = doc["hourly"]["temperature_2m"];
     JsonArray codes = doc["hourly"]["weather_code"];
     JsonArray days = doc["hourly"]["is_day"];
+    JsonArray rain = doc["hourly"]["precipitation_probability"];
     for (size_t i = 0; i < times.size() && out.hour_count < WEATHER_HOURS; i++) {
         long t = times[i] | 0L;
+        // "Rain chance" = the hour in progress (the last one starting at or before now);
+        // if the forecast starts after now, the first hour is the best we have.
+        if (t <= now_t || out.rain_chance < 0) out.rain_chance = rain[i] | -1;
         if (t <= now_t) continue;   // skip the hour already in progress
         time_t local = (time_t)(t + utc_off);
         struct tm tmv;

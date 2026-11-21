@@ -7,12 +7,13 @@
 
 #define TEMP_MAX_C     85
 #define TEMP_HOT_C     70
-#define GAUGE_ROW_H    80
+#define GAUGE_ROW_H    84
 #define ARC_SIZE       56
 #define ARC_WIDTH      6
-#define SVC_ROW_H      20
-#define SVC_STATUS_W   48
-#define SVC_PORT_W     44
+#define SVC_HEADER_H   16
+#define SVC_ROW_H      24     // 4 rows visible, more scroll
+#define SVC_STATUS_W   72
+#define SVC_PORT_W     72
 #define STALE_CHECK_MS 1000
 
 struct Gauge {
@@ -90,7 +91,7 @@ static lv_obj_t *cell(lv_obj_t *row, int32_t w) {
 
 static void header_row(lv_obj_t *card) {
     lv_obj_t *h = ui_box(card);
-    lv_obj_set_size(h, LV_PCT(100), 14);
+    lv_obj_set_size(h, LV_PCT(100), SVC_HEADER_H);
     lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_t *n = ui_label(h, FONT_S, COL_MUTED, "Service");
@@ -107,7 +108,7 @@ static void service_row_create(ServiceRow &r) {
     lv_obj_set_flex_flow(r.row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(r.row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    r.name = ui_label(r.row, FONT_S_BOLD, COL_TEXT, "");
+    r.name = ui_label(r.row, FONT_M, COL_TEXT, "");
     lv_obj_set_flex_grow(r.name, 1);
     lv_label_set_long_mode(r.name, LV_LABEL_LONG_DOT);
 
@@ -118,7 +119,7 @@ static void service_row_create(ServiceRow &r) {
     lv_obj_center(r.dot);
 
     lv_obj_t *pc = cell(r.row, SVC_PORT_W);
-    r.port = ui_label(pc, FONT_S, COL_MUTED, "-");
+    r.port = ui_label(pc, FONT_M, COL_MUTED, "-");
     lv_obj_align(r.port, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_add_flag(r.row, LV_OBJ_FLAG_HIDDEN);
 }
@@ -140,7 +141,7 @@ static void service_dot_set(lv_obj_t *dot, bool running) {
 
 static void services_card_create(lv_obj_t *tile) {
     lv_obj_t *card = ui_card(tile, 6);
-    lv_obj_set_style_pad_hor(card, 10, 0);
+    lv_obj_set_style_pad_hor(card, 16, 0);
     lv_obj_set_width(card, LV_PCT(100));
     lv_obj_set_flex_grow(card, 1);
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);

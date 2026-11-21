@@ -1,23 +1,21 @@
 #pragma once
 // Non-secret application settings. Credentials live in secrets.h.
 
-// ---------------- Display: ILI9341 over SPI (ESP32-S3) ----------------
-// Avoid GPIO 26-32 (flash) and 35-37 (octal PSRAM on R8 modules).
-#define TFT_SPI_HOST   SPI2_HOST
-#define TFT_PIN_SCLK   12
-#define TFT_PIN_MOSI   11
-#define TFT_PIN_MISO   13   // -1 if not wired
-#define TFT_PIN_CS     10
-#define TFT_PIN_DC     9
-#define TFT_PIN_RST    14   // -1 if tied to EN
-#define TFT_PIN_BL     21   // -1 if backlight is hard-wired
-#define TFT_SPI_FREQ   40000000
-#define TFT_ROTATION   1    // 1 or 3 = landscape 320x240
-#define TFT_INVERT     false
-#define TFT_RGB_ORDER  false
+// ---------------- Display: Guition JC4827W543C, NV3041A over QSPI ----------------
+// Pins from the board's ESPHome config (devices.esphome.io/devices/guition-jc4827543c).
+// GPIO 35-37 are taken by the octal PSRAM of the N4R8 module.
+#define TFT_PIN_CS     45
+#define TFT_PIN_SCK    47
+#define TFT_PIN_D0     21
+#define TFT_PIN_D1     48
+#define TFT_PIN_D2     40
+#define TFT_PIN_D3     39
+#define TFT_PIN_BL     1      // backlight, driven fully on (no dimming)
+#define TFT_ROTATION   0      // 0 or 2 (180 deg); the NV3041A cannot do 90/270
+#define TFT_IPS        true   // IPS panel: colour inversion on
 
-#define SCREEN_W 320
-#define SCREEN_H 240
+#define SCREEN_W 480
+#define SCREEN_H 272
 
 // ---------------- Touch: GT911 via TouchLib (I2C) ----------------
 #define TOUCH_ENABLED   1
@@ -27,10 +25,10 @@
 #define TOUCH_PIN_INT   3       // unused (polled), kept for reference
 #define TOUCH_I2C_ADDR  0x5D    // GT911_SLAVE_ADDRESS1 (0x14 = ADDRESS2)
 // Raw coordinate range reported by the controller, and how it maps onto the
-// 320x240 landscape screen. Set TOUCH_DEBUG 1 to print raw points on Serial,
-// then tap the corners and adjust.
-#define TOUCH_RAW_W     320
-#define TOUCH_RAW_H     240
+// 480x272 landscape screen (if TFT_ROTATION is 2, set both TOUCH_INVERT_* to 1).
+// Set TOUCH_DEBUG 1 to print raw points on Serial, then tap the corners and adjust.
+#define TOUCH_RAW_W     480
+#define TOUCH_RAW_H     272
 #define TOUCH_SWAP_XY   0
 #define TOUCH_INVERT_X  0
 #define TOUCH_INVERT_Y  0

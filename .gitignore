@@ -11,3 +11,5 @@ compile_commands.json
 # credentials
 include/secrets.h
 __pycache__/
+
+.claude/settings.local.json

@@ -90,6 +90,7 @@ struct WeatherData {
     float   feels_like;
     float   humidity;
     float   wind_kmh;
+    int16_t rain_chance;   // % for the hour in progress, -1 = unknown
     int16_t code;
     bool    is_day;
     WeatherHour hours[WEATHER_HOURS];

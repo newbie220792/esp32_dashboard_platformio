@@ -23,6 +23,11 @@ static lv_obj_t *s_main_scr, *s_wifi_scr;
 static bool s_wifi_ok = false;
 static bool s_mqtt_ok = false;
 static bool s_weather_ok = false;
+// Set by the Back button on the Wi-Fi screens: stay on the main UI while the
+// setup flow keeps running. Cleared on Connected, a BOOT long-press, or by
+// tapping the Wi-Fi icon in the status bar.
+static bool s_wifi_dismissed = false;
+static bool s_wifi_setup_done = false;
 
 static int active_tile() {
     lv_obj_t *t = lv_tileview_get_tile_active(s_tv);
@@ -34,7 +39,7 @@ static int active_tile() {
 static void refresh_status() {
     const int t = active_tile();
     for (int i = 0; i < TILE_COUNT; i++) {
-        lv_obj_set_width(s_pills[i], i == t ? 16 : 6);
+        lv_obj_set_width(s_pills[i], i == t ? 20 : 8);
         lv_obj_set_style_bg_color(s_pills[i], i == t ? COL_CPU : COL_PILL_OFF, 0);
     }
     bool ok = s_mqtt_ok;
@@ -65,6 +70,9 @@ static void tile_changed_cb(lv_event_t *) {
     if (s_rotate_timer) lv_timer_reset(s_rotate_timer);
 }
 
+// Wi-Fi icon tap: reopen the setup screens if they were dismissed with Back.
+static void wifi_icon_cb(lv_event_t *) { ui_wifi_reopen(); }
+
 static void status_bar_create(lv_obj_t *scr) {
     lv_obj_t *bar = ui_box(scr);
     lv_obj_set_size(bar, SCREEN_W, UI_STATUS_H);
@@ -76,25 +84,25 @@ static void status_bar_create(lv_obj_t *scr) {
     lv_obj_set_size(left, LV_SIZE_CONTENT, LV_PCT(100));
     lv_obj_set_flex_flow(left, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(left, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(left, 6, 0);
+    lv_obj_set_style_pad_column(left, 8, 0);
     lv_obj_align(left, LV_ALIGN_LEFT_MID, 0, 0);
     s_dot = ui_box(left);
     lv_obj_set_size(s_dot, 8, 8);
     lv_obj_set_style_radius(s_dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_opa(s_dot, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(s_dot, COL_GRAY, 0);
-    s_title = ui_label(left, FONT_S, COL_TEXT, "");
+    s_title = ui_label(left, FONT_M, COL_TEXT, "");
 
     // center: page pills
     lv_obj_t *pills = ui_box(bar);
     lv_obj_set_size(pills, LV_SIZE_CONTENT, LV_PCT(100));
     lv_obj_set_flex_flow(pills, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(pills, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(pills, 4, 0);
+    lv_obj_set_style_pad_column(pills, 5, 0);
     lv_obj_align(pills, LV_ALIGN_CENTER, 0, 0);
     for (int i = 0; i < TILE_COUNT; i++) {
         s_pills[i] = ui_box(pills);
-        lv_obj_set_size(s_pills[i], 6, 4);
+        lv_obj_set_size(s_pills[i], 8, 4);
         lv_obj_set_style_radius(s_pills[i], 2, 0);
         lv_obj_set_style_bg_opa(s_pills[i], LV_OPA_COVER, 0);
     }
@@ -104,10 +112,13 @@ static void status_bar_create(lv_obj_t *scr) {
     lv_obj_set_size(right, LV_SIZE_CONTENT, LV_PCT(100));
     lv_obj_set_flex_flow(right, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(right, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(right, 6, 0);
+    lv_obj_set_style_pad_column(right, 8, 0);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, 0, 0);
-    s_wifi = ui_label(right, FONT_S, COL_GRAY, LV_SYMBOL_WIFI);
-    s_clock = ui_label(right, FONT_S, COL_TEXT, "--:--");
+    s_wifi = ui_label(right, FONT_L, COL_GRAY, LV_SYMBOL_WIFI);   // ~20px glyph
+    lv_obj_add_flag(s_wifi, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(s_wifi, 6);
+    lv_obj_add_event_cb(s_wifi, wifi_icon_cb, LV_EVENT_CLICKED, nullptr);
+    s_clock = ui_label(right, FONT_M, COL_TEXT, "--:--");
 }
 
 void ui_init() {
@@ -149,14 +160,32 @@ void ui_init() {
     // Wi-Fi setup screens live on their own screen; the main UI stays hidden
     // until the setup flow reports Connected.
     s_main_scr = scr;
-    s_wifi_scr = ui_wifi_create();
+    s_wifi_scr = ui_wifi_create(ui_wifi_back);
     lv_screen_load(s_wifi_scr);
 }
 
 static void on_wifi_setup(const WifiSetupInfo &info) {
     ui_wifi_apply(info);
-    lv_obj_t *want = info.state == WifiSetupState::Connected ? s_main_scr : s_wifi_scr;
+    if (info.state == WifiSetupState::Connected) {
+        s_wifi_setup_done = true;
+        s_wifi_dismissed = false;
+    } else {
+        s_wifi_setup_done = false;
+    }
+    lv_obj_t *want = (s_wifi_setup_done || s_wifi_dismissed) ? s_main_scr : s_wifi_scr;
     if (lv_screen_active() != want) lv_screen_load(want);
+}
+
+void ui_wifi_back() {
+    s_wifi_dismissed = true;
+    lv_tileview_set_tile_by_index(s_tv, TILE_MONITOR, 0, LV_ANIM_OFF);
+    refresh_status();
+    lv_screen_load(s_main_scr);
+}
+
+void ui_wifi_reopen() {
+    s_wifi_dismissed = false;
+    if (!s_wifi_setup_done) lv_screen_load(s_wifi_scr);
 }
 
 void ui_next_tile() {

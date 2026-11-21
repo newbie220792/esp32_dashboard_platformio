@@ -22,20 +22,24 @@
 #define COL_SW_OFF    lv_color_hex(0x2A3646)
 #define COL_SW_OFF_FG lv_color_hex(0xA3AEBB)
 
-// Metrics
-#define UI_PAD        8
-#define UI_GAP        6
-#define UI_RADIUS     10
-#define UI_STATUS_H   20
+// Metrics (480x272)
+#define UI_PAD        10
+#define UI_GAP        8
+#define UI_RADIUS     12
+#define UI_STATUS_H   28
 
 // Fonts
 #define FONT_S   (&lv_font_montserrat_12)
 #define FONT_M   (&lv_font_montserrat_14)
+#define FONT_MD  (&lv_font_montserrat_16)
 #define FONT_L   (&lv_font_montserrat_20)
-#define FONT_XL  (&lv_font_montserrat_40)
-// LVGL ships no bold Montserrat. Point this at a generated 12px/600 font
-// (lv_font_conv) to get real bold names; until then it is the regular 12px.
-#define FONT_S_BOLD FONT_S
+#define FONT_XL  (&lv_font_montserrat_48)
+// LVGL ships no bold Montserrat. Point these at generated 600-weight fonts
+// (lv_font_conv) to get real bold; until then they are the regular sizes.
+#define FONT_S_BOLD  FONT_S
+#define FONT_M_BOLD  FONT_M
+#define FONT_MD_BOLD FONT_MD
+#define FONT_L_BOLD  FONT_L
 
 // Plain container: no theme styles, transparent, not scrollable/clickable.
 lv_obj_t *ui_box(lv_obj_t *parent);

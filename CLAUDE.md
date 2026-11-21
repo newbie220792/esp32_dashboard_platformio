@@ -9,19 +9,34 @@ Firmware ESP32 hiển thị giao diện LVGL 9 gồm 3 màn hình vuốt ngang (
 Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 Đặc tả công việc: `tasks/`.
 
-## Phần cứng
+## Phần cứng: Guition JC4827W543C (4.3 inch, cảm ứng điện dung)
 
-- Board: ESP32-S3 (esp32-s3-devkitc-1, flash 4MB)
-- Màn hình: ILI9341 320x240 nằm ngang, SPI. Chân mặc định trong `include/app_config.h`:
-  SCLK=12 MOSI=11 MISO=13 CS=10 DC=9 RST=14 BL=21 (cần kiểm tra lại với mạch thật)
-- Cảm ứng: GT911 (I2C, thư viện TouchLib) SDA=8 SCL=4 RST=38 INT=3. Hiệu chỉnh bằng `TOUCH_DEBUG`
-  và `TOUCH_RAW_W/H`, `TOUCH_SWAP_XY`, `TOUCH_INVERT_X/Y`.
+- MCU: ESP32-S3-WROOM-1 N4R8 (flash 4 MB, PSRAM 8 MB octal). Mô tả của người bán ghi "LX6" là sai.
+  `board = esp32-s3-devkitc-1` + `board_build.arduino.memory_type = qio_opi` + `-DBOARD_HAS_PSRAM`;
+  thiếu `qio_opi` thì không có PSRAM (draw buffer tự lùi về 20 dòng trong RAM nội, chậm hơn).
+- Màn hình: IPS 480x272, driver **NV3041A qua QSPI**. Chân trong `include/app_config.h`
+  (lấy từ cấu hình ESPHome của board): CS=45 CLK=47 D0=21 D1=48 D2=40 D3=39, đèn nền BL=1 bật cố định
+  sáng nhất. Không có chân reset màn hình.
+- Cảm ứng: GT911 (I2C, TouchLib trong `lib/`) SDA=8 SCL=4 RST=38 INT=3, tọa độ thô 480x272.
+  Hiệu chỉnh bằng `TOUCH_DEBUG`, `TOUCH_SWAP_XY`, `TOUCH_INVERT_X/Y` (xoay màn 180° thì đảo cả X và Y).
 - Nút BOOT (GPIO0): bấm nhanh để chuyển màn; giữ 5 giây để xóa Wi-Fi đã lưu và mở chế độ cấu hình.
+- Chưa xác minh: địa chỉ I2C GT911 (đang dùng 0x5D, dự phòng 0x14), chân thẻ SD và loa. Thẻ SD hiện không dùng.
+
+### Lưu ý với board này
+
+- NV3041A cần **đảo màu** (`TFT_IPS`, tham số `ips` của `Arduino_NV3041A`) và **đổi byte**: bus QSPI của
+  GFX Library tự gửi MSB trước, nên buffer RGB565 của LVGL đưa thẳng vào `draw16bitRGBBitmap`. Màu sai thì
+  thử đổi hai chỗ này trước.
+- Chỉ xoay được 0° hoặc 180° (`TFT_ROTATION` 0 hoặc 2), không dùng 90°/270°.
+- Thẻ SD dùng chung bus với màn: nếu sau này dùng SD thì phải sắp thứ tự thao tác và kiểm tra lại cảm ứng.
+- Flash chỉ 4 MB (`huge_app.csv`, 3 MB cho app): chỉ bật font và widget LVGL đang dùng.
+- Draw buffer: 2 buffer 1/4 màn hình (480x68) trong PSRAM, chế độ partial.
 
 ## Công nghệ
 
-- PlatformIO + Arduino framework
-- LVGL 9.x, LovyanGFX (driver màn hình), TouchLib (cảm ứng), WiFiManager (cổng cấu hình Wi-Fi)
+- PlatformIO + Arduino framework (`espressif32@6.9.0`, Arduino-ESP32 2.0.17)
+- LVGL 9.2, **GFX Library for Arduino 1.4.9** (driver màn hình; bản 1.5+ cần Arduino-ESP32 3.x nên không nâng),
+  TouchLib (cảm ứng), WiFiManager (cổng cấu hình Wi-Fi). Không dùng LovyanGFX/TFT_eSPI (không có NV3041A QSPI).
 - Thư viện MQTT: PubSubClient, JSON: ArduinoJson
 - Thời gian: NTP, múi giờ Asia/Ho_Chi_Minh
 
@@ -29,9 +44,6 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 
 `pio` không có trong PATH, dùng `~/.platformio/penv/bin/pio`.
 
-- Build: `pio run` (mặc định env `esp32s3`)
-- Nạp firmware: `pio run -t upload`
-- Xem log serial: `pio device monitor`
 - Test parser trên máy tính (Unity): `pio test -e native`
 - Test script Python: `python3 -m unittest discover -s tools`
 - Script Pi 5: `sudo python3 tools/pi5_stats_publisher.py --host <broker> --services nginx,mosquitto,docker,node-red`
@@ -40,94 +52,48 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 
 ## Cấu trúc thư mục
 
-- `src/main.cpp`: khởi tạo, task LVGL
-- `src/ui.*`: màn hình gốc, thanh trạng thái, tileview, phân phối sự kiện từ hàng đợi
-- `src/ui_monitor.*`: màn 1 (3 đồng hồ nhỏ + danh sách service)
-- `src/ui_weather.*`, `src/weather_icon.*`: màn 2 (thời tiết)
-- `src/ui_home.*`: màn 3 (panel phòng, panel cụm, công tắc)
-- `src/ui_theme.*`: màu, font, helper (`ui_box`, `ui_card`, `ui_style_scrollbar`)
-- `src/icon_draw.*`: hàm vẽ icon vector dùng chung (không dùng ảnh bitmap)
 - `src/models.h`, `src/parsers.*`: struct dữ liệu và hàm parse JSON/topic thuần (không phụ thuộc
   Arduino/LVGL). Env `native` chỉ biên dịch `parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
-- `src/app_events.*`: hàng đợi từ task mạng sang task LVGL
-- `src/wifi_setup.*`: luồng cấu hình Wi-Fi lúc khởi động (máy trạng thái, WiFiManager, NVS)
-- `src/ui_wifi.*`: các màn Wi-Fi (Connecting, màn 4, 5, 6) trên một screen LVGL riêng
-- `src/wifi_manager.*`, `src/mqtt.*`, `src/weather.*`: mạng và dữ liệu
-  (không đặt tên `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>`)
-- `src/display.cpp`, `src/touch.cpp`: driver màn hình và cảm ứng
-- `include/app_config.h`: chân, topic, vị trí, chu kỳ, thời gian chờ
-- `include/lv_conf.h`: cấu hình LVGL
+- Không đặt tên file `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>` (dùng `wifi_manager.*`).
 - `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD` (không commit, không đọc). Mẫu: `include/secrets.example.h`
-- `tools/`: script Python cho Pi 5 và giả lập công tắc
-
-## Wi-Fi
-
-Task `wifi` (core 0) chạy `wifi_setup_run()` cho đến khi kết nối được, sau đó mới giám sát kết nối lại và cài NTP.
-Mỗi lần đổi trạng thái được gửi qua `AppEventType::WifiSetup`; `ui.cpp` hiện screen Wi-Fi và chỉ chuyển sang
-giao diện chính (tileview) khi nhận `Connected`.
-
-1. `CONNECTING`: thử `secrets.h` trước (**`secrets.h` luôn thắng**), nếu thất bại thì thử mạng đã lưu trong NVS
-   (namespace `wifi_cfg`, chỉ chứa mạng nhập qua portal). Timeout `WIFI_CONNECT_TIMEOUT_MS` (18 giây) mỗi mạng;
-   dừng sớm khi cùng một lỗi rõ ràng (không thấy mạng, sai mật khẩu) lặp lại 3 lần.
-2. `FAILED_SAVED` (màn 4): báo lý do của mạng `secrets.h`, đếm ngược 5 giây rồi mở portal. `Retry` thử lại bước 1,
-   `Setup now` mở portal ngay.
-3. `PORTAL` (màn 5): AP `ESP32-Setup` (mật khẩu `SETUP_AP_PASSWORD`, trống thì là mạng mở) + captive portal tại
-   `192.168.4.1`. WiFiManager chạy không chặn (`setConfigPortalBlocking(false)`, `process()` mỗi 10 ms).
-4. `CONNECTING_NEW`: báo từ `setPreSaveConfigCallback`, đọc SSID và mật khẩu từ `server->arg("s"/"p")`, tăng `Attempt`.
-   Lần thử kết nối chạy đồng bộ bên trong `process()` (chỉ chặn task `wifi`, giao diện vẫn chạy).
-5. Thành công: lưu vào NVS, tắt portal, `Connected`. Thất bại: `FAILED_NEW` (màn 6), portal vẫn mở, lặp lại không giới hạn.
-
-- Lý do lỗi lấy từ `reason` của `WIFI_EVENT_STA_DISCONNECTED`, dự phòng bằng `WiFi.status()`
-  (`wifi_fail_reason()` trong `parsers.cpp`, có test).
-- Mã QR: `build_wifi_qr()` (`WIFI:T:WPA;S:..;P:..;;` hoặc `T:nopass`, có escape ký tự đặc biệt).
-- Giữ BOOT 5 giây (`WifiCmd::ResetAndPortal`): xóa NVS rồi mở portal, kể cả khi đang ở giao diện chính.
-- Sau khi đã vào giao diện chính, mất Wi-Fi chỉ làm icon chuyển xám và tự kết nối lại, không quay về màn cấu hình.
-- `WiFi.persistent(false)`: thông tin Wi-Fi chỉ nằm trong NVS của mình.
+- Luồng Wi-Fi chi tiết: `.claude/rules/wifi.md`. Đặc tả màn 3: `.claude/rules/home.md`.
 
 ## Dữ liệu (MQTT)
 
 Một client MQTT duy nhất (`mqtt.cpp`). Bảng `kRoutes` vừa để subscribe vừa để phân phối theo topic
 (`mqtt_topic_matches`, hỗ trợ `+`/`#`). Buffer 4096 byte cho `home/config`.
 
-| Topic | Hướng | Payload |
-|---|---|---|
-| `pi5/stats` | nhận, mỗi 2 giây | `{"cpu":37,"ram":52,"ram_used":4.1,"ram_total":8,"temp":58}` |
-| `pi5/services` | nhận, retain, khi đổi + mỗi 10 giây | `{"services":[{"name":"nginx","status":"running","port":80}]}`; `port` có thể `null`, tối đa 10 |
-| `home/config` | nhận, retain | `{"rooms":[{"id","name","panels":[{"id","name","switches":[{"id","name","icon","state"}]}]}]}` |
-| `home/<phòng>/<cụm>/<số>/state` | nhận | `ON` / `OFF` |
-| `home/<phòng>/<cụm>/<số>/set` | gửi | `ON` / `OFF` |
+| Topic                           | Hướng                               | Payload                                                                                         |
+| ------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `pi5/stats`                     | nhận, mỗi 2 giây                    | `{"cpu":37,"ram":52,"ram_used":4.1,"ram_total":8,"temp":58}`                                    |
+| `pi5/services`                  | nhận, retain, khi đổi + mỗi 10 giây | `{"services":[{"name":"nginx","status":"running","port":80}]}`; `port` có thể `null`, tối đa 10 |
+| `home/config`                   | nhận, retain                        | `{"rooms":[{"id","name","panels":[{"id","name","switches":[{"id","name","icon","state"}]}]}]}`  |
+| `home/<phòng>/<cụm>/<số>/state` | nhận                                | `ON` / `OFF`                                                                                    |
+| `home/<phòng>/<cụm>/<số>/set`   | gửi                                 | `ON` / `OFF`                                                                                    |
 
 - `status` khác `running` được coi là `stopped`. JSON hỏng thì bỏ qua và giữ dữ liệu cũ.
 - id phòng hoặc cụm chứa `/`, `+`, `#` sẽ bị bỏ qua. Giới hạn: 8 phòng, 6 cụm mỗi phòng.
 - Thời tiết: Open-Meteo, làm mới mỗi 10 phút.
 
-## Quy ước giao diện (320x240, nền tối, phẳng)
+## Quy ước giao diện (480x272, nền tối, phẳng)
 
 - Màu: nền `#0B0F14`, thẻ `#151B23`, track `#263140`, chữ `#E6EDF3`, chữ phụ `#8B98A8`
 - CPU `#3DD6C6`, RAM `#9AA8FF`, TEMP `#F5A524` (đỏ khi > 70°C)
-- Xanh kết nối `#3DDC84`, xám mất kết nối `#6B7788`
-- Font Montserrat 12 / 14 / 20 / 40. Không gradient, không đổ bóng.
-  LVGL không có Montserrat đậm: `FONT_S_BOLD` tạm trỏ về font 12 thường.
-- Padding 8px, khoảng cách 6px, bo góc thẻ 10.
-- Thanh trạng thái (20px): chấm trạng thái + nhãn, 3 chấm chỉ trang, icon Wi-Fi, giờ.
+- Xanh kết nối `#3DDC84`, xám mất kết nối `#6B7788`, đỏ `#FF6B6B`
+- Font Montserrat 12 / 14 / 16 / 20 / 48 (`FONT_S/M/MD/L/XL`). Không gradient, không đổ bóng.
+  LVGL không có Montserrat đậm: các `FONT_*_BOLD` tạm trỏ về font thường cùng cỡ.
+- Padding ngoài 10px, khoảng cách 8px, bo góc thẻ 12.
+- Thanh trạng thái (28px, font 14): chấm 8px + nhãn, 3 chấm chỉ trang (đang chọn 20x4, còn lại 8x4),
+  icon Wi-Fi 20px, giờ. Chạm icon Wi-Fi khi chưa kết nối thì mở lại màn cấu hình.
   Chấm: màn 1 và 3 là MQTT, màn 2 là lần lấy thời tiết gần nhất.
+- Màn 1: 3 đồng hồ cao 84px (arc 56, nét 6); danh sách service dòng 24px (vừa 4 dòng), cột Status và Port
+  rộng 72px.
+- Màn 2: thẻ chính 116px (icon 84, nhiệt độ font 48, cột phải Humidity / Wind / Rain chance), 5 thẻ dự báo.
+  `Rain chance` = `precipitation_probability` của giờ đang diễn ra.
 - Danh sách service: cột Status chỉ có chấm (đặc xanh = running, vòng rỗng đỏ `#FF6B6B` = stopped).
 - Danh sách cuộn dọc: container phải bật CLICKABLE (LVGL tìm đối tượng cuộn từ đối tượng được chạm
   đi lên cha, còn `ui_box()` tắt CLICKABLE), và chỉ đặt `LV_DIR_VER` để vuốt ngang vẫn đổi màn.
   Thanh cuộn 3px `#3A4656` qua `ui_style_scrollbar()`.
-
-### Màn 3: Home switches
-
-- Panel phòng `#151B23` (bo 10, padding 6). Hàng tiêu đề 24px: `‹` 32px, tên phòng + `1/4`, `›` 32px.
-  Đổi phòng vòng tròn. Nhận `home/config` mới thì giữ phòng đang xem nếu id còn tồn tại.
-- Panel cụm `#1D2733` (bo 8, padding 4, cao 80px): nhãn cụm 14px + hàng 3 công tắc. Vừa 2 cụm, nhiều
-  hơn thì cuộn (tiêu đề đứng yên).
-- Mỗi cụm luôn có đúng 3 ô: thiếu thì để ô trống, thừa thì bỏ.
-- Công tắc: ON nền `#F5A524`, chữ và icon `#0B0F14`. OFF nền `#2A3646`, tên `#E6EDF3`, trạng thái
-  và icon `#A3AEBB`. Icon theo trường `icon`: `bulb`, `fan`, `plug`, `snow` (hoặc `ac`).
-- Chạm: gửi trạng thái ngược lại lên `.../set` và làm mờ ô 40% kèm chữ `...`. **Chỉ đổi màu khi
-  nhận `.../state`.** Sau `SWITCH_PENDING_MS` (3 giây) không có phản hồi thì trả về trạng thái cũ.
-- Mất MQTT: ô mờ 50%, bỏ qua thao tác chạm, xóa các lệnh đang chờ.
 
 ## Quy tắc code
 

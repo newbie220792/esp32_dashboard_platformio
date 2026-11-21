@@ -33,10 +33,12 @@
 #define LV_USE_PERF_MONITOR 0
 
 /* Fonts */
+/* Only the sizes the UI uses (flash is 4 MB). lv_conf_internal.h turns 14 on by default. */
 #define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
+#define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_20 1
-#define LV_FONT_MONTSERRAT_40 1
+#define LV_FONT_MONTSERRAT_48 1
 #define LV_FONT_DEFAULT &lv_font_montserrat_14
 
 /* Widgets used: obj, label, arc, tileview, spinner, bar, qrcode */

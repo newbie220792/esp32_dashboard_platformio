@@ -5,25 +5,30 @@
 
 #define DEG "\xC2\xB0"
 
-static lv_obj_t *s_icon, *s_temp, *s_unit, *s_cond, *s_feels, *s_hum, *s_wind;
+#define MAIN_CARD_H  116
+#define MAIN_ICON    84
+#define HOUR_ICON    28
+#define STATS_W      150
+
+static lv_obj_t *s_icon, *s_temp, *s_unit, *s_cond, *s_feels, *s_hum, *s_wind, *s_rain;
 
 struct HourCard {
     lv_obj_t *time, *icon, *temp;
 };
 static HourCard s_hours[1 + WEATHER_HOURS];   // [0] = Now
 
-static lv_obj_t *stat_block(lv_obj_t *parent, const char *title, lv_obj_t **value_out) {
-    lv_obj_t *b = ui_box(parent);
-    lv_obj_set_size(b, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(b, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(b, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_END);
-    ui_label(b, FONT_S, COL_MUTED, title);
-    *value_out = ui_label(b, FONT_M, COL_TEXT, "--");
-    return b;
+// One line of the right-hand column: "Humidity ........ 78%".
+static void stat_row(lv_obj_t *parent, const char *title, lv_obj_t **value_out) {
+    lv_obj_t *r = ui_box(parent);
+    lv_obj_set_size(r, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_t *t = ui_label(r, FONT_S, COL_MUTED, title);
+    lv_obj_align(t, LV_ALIGN_LEFT_MID, 0, 0);
+    *value_out = ui_label(r, FONT_MD_BOLD, COL_TEXT, "--");
+    lv_obj_align(*value_out, LV_ALIGN_RIGHT_MID, 0, 0);
 }
 
 static void hour_card_create(HourCard &h, lv_obj_t *row, bool highlight) {
-    lv_obj_t *card = ui_card(row, 4);
+    lv_obj_t *card = ui_card(row, 6);
     lv_obj_set_height(card, LV_PCT(100));
     lv_obj_set_flex_grow(card, 1);
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);
@@ -34,8 +39,8 @@ static void hour_card_create(HourCard &h, lv_obj_t *row, bool highlight) {
         fg = sub = COL_ON_ACCENT;
     }
     h.time = ui_label(card, FONT_S, sub, highlight ? "Now" : "--:--");
-    h.icon = weather_icon_create(card, 30);
-    h.temp = ui_label(card, FONT_M, fg, "--" DEG);
+    h.icon = weather_icon_create(card, HOUR_ICON);
+    h.temp = ui_label(card, FONT_MD_BOLD, fg, "--" DEG);
 }
 
 void ui_weather_create(lv_obj_t *tile) {
@@ -44,15 +49,16 @@ void ui_weather_create(lv_obj_t *tile) {
 
     // ---- current conditions -------------------------------------------
     lv_obj_t *big = ui_card(tile, UI_PAD);
-    lv_obj_set_size(big, LV_PCT(100), 104);
+    lv_obj_set_size(big, LV_PCT(100), MAIN_CARD_H);
+    lv_obj_set_style_pad_hor(big, 14, 0);
 
-    s_icon = weather_icon_create(big, 64);
+    s_icon = weather_icon_create(big, MAIN_ICON);
     lv_obj_align(s_icon, LV_ALIGN_LEFT_MID, 0, 0);
 
     lv_obj_t *mid = ui_box(big);
     lv_obj_set_size(mid, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(mid, LV_FLEX_FLOW_COLUMN);
-    lv_obj_align(mid, LV_ALIGN_LEFT_MID, 64 + 12, 0);
+    lv_obj_align(mid, LV_ALIGN_LEFT_MID, MAIN_ICON + 14, 0);
 
     lv_obj_t *trow = ui_box(mid);
     lv_obj_set_size(trow, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
@@ -61,22 +67,22 @@ void ui_weather_create(lv_obj_t *tile) {
     s_temp = ui_label(trow, FONT_XL, COL_TEXT, "--");
     lv_obj_set_style_text_line_space(s_temp, 0, 0);
     s_unit = ui_label(trow, FONT_L, COL_MUTED, DEG "C");
-    lv_obj_set_style_pad_top(s_unit, 6, 0);
+    lv_obj_set_style_pad_top(s_unit, 8, 0);
     lv_obj_set_style_pad_left(s_unit, 2, 0);
 
-    s_cond = ui_label(mid, FONT_M, COL_TEXT, "Loading...");
+    s_cond = ui_label(mid, FONT_MD_BOLD, COL_TEXT, "Loading...");
     lv_label_set_long_mode(s_cond, LV_LABEL_LONG_DOT);
-    lv_obj_set_width(s_cond, 130);
+    lv_obj_set_width(s_cond, 160);
     s_feels = ui_label(mid, FONT_S, COL_MUTED, "Feels like --" DEG);
 
     lv_obj_t *right = ui_box(big);
-    lv_obj_set_size(right, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_size(right, STATS_W, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(right, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(right, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_END);
-    lv_obj_set_style_pad_row(right, 8, 0);
+    lv_obj_set_style_pad_row(right, 10, 0);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, 0, 0);
-    stat_block(right, "Humidity", &s_hum);
-    stat_block(right, "Wind", &s_wind);
+    stat_row(right, "Humidity", &s_hum);
+    stat_row(right, "Wind", &s_wind);
+    stat_row(right, "Rain chance", &s_rain);
 
     // ---- now + next 4 hours ---------------------------------------------
     lv_obj_t *row = ui_box(tile);
@@ -94,6 +100,8 @@ void ui_weather_update(const WeatherData &w) {
     lv_label_set_text_fmt(s_feels, "Feels like %d" DEG, (int)lroundf(w.feels_like));
     lv_label_set_text_fmt(s_hum, "%d%%", (int)lroundf(w.humidity));
     lv_label_set_text_fmt(s_wind, "%d km/h", (int)lroundf(w.wind_kmh));
+    if (w.rain_chance >= 0) lv_label_set_text_fmt(s_rain, "%d%%", (int)w.rain_chance);
+    else lv_label_set_text(s_rain, "--");
 
     weather_icon_set(s_hours[0].icon, w.code, w.is_day);
     lv_label_set_text_fmt(s_hours[0].temp, "%d" DEG, (int)lroundf(w.temp));

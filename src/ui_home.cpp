@@ -7,10 +7,11 @@
 #include "mqtt.h"
 #include "ui_theme.h"
 
-#define HEADER_H      24
-#define NAV_BTN_W     32
-#define CLUSTER_H     80     // 2 clusters fit; more scroll
-#define CLUSTER_GAP   4
+#define HEADER_H      32
+#define NAV_BTN_W     44
+#define CLUSTER_H     82     // 2 clusters fit; more scroll
+#define CLUSTER_GAP   8
+#define SWITCH_ICON   22
 #define PENDING_TICK  200
 
 struct SwitchView {
@@ -61,7 +62,7 @@ static void switch_icon_draw_cb(lv_event_t *e) {
 
 static lv_obj_t *switch_icon_create(lv_obj_t *parent, SwitchIcon icon) {
     lv_obj_t *o = ui_box(parent);
-    lv_obj_set_size(o, 20, 20);
+    lv_obj_set_size(o, SWITCH_ICON, SWITCH_ICON);
     lv_obj_set_user_data(o, (void *)(uintptr_t)icon);
     lv_obj_add_event_cb(o, switch_icon_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
     return o;
@@ -120,12 +121,12 @@ static void switch_create(lv_obj_t *row, uint8_t panel_idx, uint8_t sw_idx, cons
     lv_obj_set_flex_grow(btn, 1);
     if (!sw.present || s_view_count >= (int)(sizeof s_views / sizeof s_views[0])) return;   // keeps the 1/3 slot
 
-    lv_obj_set_style_radius(btn, 8, 0);
+    lv_obj_set_style_radius(btn, 10, 0);
     lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_hor(btn, 2, 0);
+    lv_obj_set_style_pad_hor(btn, 4, 0);
     lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(btn, 1, 0);
+    lv_obj_set_style_pad_row(btn, 0, 0);
     lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
 
     SwitchView &v = s_views[s_view_count];
@@ -133,7 +134,7 @@ static void switch_create(lv_obj_t *row, uint8_t panel_idx, uint8_t sw_idx, cons
     v.panel = panel_idx;
     v.sw = sw_idx;
     v.icon = switch_icon_create(btn, sw.icon);
-    v.name = ui_label(btn, FONT_S_BOLD, COL_TEXT, sw.name);
+    v.name = ui_label(btn, FONT_M_BOLD, COL_TEXT, sw.name);
     lv_label_set_long_mode(v.name, LV_LABEL_LONG_DOT);
     lv_obj_set_style_max_width(v.name, LV_PCT(100), 0);
     v.state = ui_label(btn, FONT_S, COL_SW_OFF_FG, "");
@@ -147,19 +148,20 @@ static void cluster_create(uint8_t panel_idx, const HomePanel &panel) {
     lv_obj_set_size(box, LV_PCT(100), CLUSTER_H);
     lv_obj_set_style_bg_color(box, COL_PANEL, 0);
     lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(box, 8, 0);
+    lv_obj_set_style_radius(box, 10, 0);
     lv_obj_set_style_pad_all(box, 4, 0);
     lv_obj_set_flex_flow(box, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(box, 2, 0);
 
     lv_obj_t *lbl = ui_label(box, FONT_S, COL_MUTED, panel.name);
     lv_obj_set_height(lbl, 14);
+    lv_obj_set_style_pad_left(lbl, 2, 0);
 
     lv_obj_t *row = ui_box(box);
     lv_obj_set_width(row, LV_PCT(100));
     lv_obj_set_flex_grow(row, 1);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_column(row, 6, 0);
+    lv_obj_set_style_pad_column(row, 4, 0);
     for (uint8_t i = 0; i < HOME_SWITCHES; i++) switch_create(row, panel_idx, i, panel.switches[i]);
 }
 
@@ -202,12 +204,12 @@ static lv_obj_t *nav_btn_create(lv_obj_t *parent, const char *symbol, int dir, l
     lv_obj_t *b = ui_box(parent);
     lv_obj_set_size(b, NAV_BTN_W, HEADER_H);
     lv_obj_align(b, align, 0, 0);
-    lv_obj_set_style_radius(b, 6, 0);
+    lv_obj_set_style_radius(b, 8, 0);
     lv_obj_set_style_bg_color(b, COL_PANEL, 0);
     lv_obj_set_style_bg_color(b, COL_SW_OFF, LV_STATE_PRESSED);
     lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
     lv_obj_add_flag(b, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_t *l = ui_label(b, FONT_M, COL_TEXT, symbol);
+    lv_obj_t *l = ui_label(b, FONT_MD, COL_TEXT, symbol);
     lv_obj_center(l);
     lv_obj_add_event_cb(b, nav_cb, LV_EVENT_CLICKED, (void *)(intptr_t)dir);
     return b;
@@ -246,9 +248,9 @@ void ui_home_create(lv_obj_t *tile) {
     lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(mid, 6, 0);
     lv_obj_align(mid, LV_ALIGN_CENTER, 0, 0);
-    s_title = ui_label(mid, FONT_M, COL_TEXT, "Home");
+    s_title = ui_label(mid, FONT_L_BOLD, COL_TEXT, "Home");
     lv_label_set_long_mode(s_title, LV_LABEL_LONG_DOT);
-    lv_obj_set_style_max_width(s_title, 170, 0);
+    lv_obj_set_style_max_width(s_title, 300, 0);
     s_index = ui_label(mid, FONT_S, COL_MUTED, "");
 
     // Clusters (scrolls vertically; horizontal drags chain to the tileview)

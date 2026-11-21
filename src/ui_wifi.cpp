@@ -15,10 +15,15 @@
 #define SETUP_AP_PASSWORD ""
 #endif
 
-#define BTN_H 36
+#define BAR_H     36   // top bar with "Back"
+#define BACK_H    32
+#define BTN_H     44
+#define STATUS_H  36   // "Waiting for setup..." card
+#define QR_FRAME  136
 #define BULLET "\xE2\x80\xA2"
 
 static lv_obj_t *s_scr, *s_bar_title;
+static void (*s_on_back)();
 static lv_obj_t *v_connect, *v_fail, *v_portal, *v_retry;
 
 // connecting
@@ -52,8 +57,8 @@ static lv_obj_t *wifi_off_icon(lv_obj_t *parent, int32_t size) {
 
 static lv_obj_t *view_create() {
     lv_obj_t *v = ui_box(s_scr);
-    lv_obj_set_size(v, SCREEN_W, SCREEN_H - UI_STATUS_H);
-    lv_obj_align(v, LV_ALIGN_TOP_LEFT, 0, UI_STATUS_H);
+    lv_obj_set_size(v, SCREEN_W, SCREEN_H - BAR_H);
+    lv_obj_align(v, LV_ALIGN_TOP_LEFT, 0, BAR_H);
     lv_obj_set_style_pad_all(v, UI_PAD, 0);
     lv_obj_set_flex_flow(v, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_row(v, UI_GAP, 0);
@@ -74,8 +79,8 @@ static lv_obj_t *center_group(lv_obj_t *view) {
 
 static lv_obj_t *waiting_card(lv_obj_t *view) {
     lv_obj_t *card = ui_card(view, 0);
-    lv_obj_set_size(card, LV_PCT(100), 28);
-    lv_obj_set_style_pad_hor(card, 10, 0);
+    lv_obj_set_size(card, LV_PCT(100), STATUS_H);
+    lv_obj_set_style_pad_hor(card, 12, 0);
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(card, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(card, 8, 0);
@@ -84,7 +89,7 @@ static lv_obj_t *waiting_card(lv_obj_t *view) {
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(dot, COL_TEMP, 0);
     lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
-    ui_label(card, FONT_S, COL_TEXT, "Waiting for setup...");
+    ui_label(card, FONT_M, COL_TEXT, "Waiting for setup...");
     return card;
 }
 
@@ -106,9 +111,9 @@ static void connect_view_create() {
     lv_obj_set_style_arc_width(sp, 4, LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(sp, COL_CPU, LV_PART_INDICATOR);
     c_title = ui_label(g, FONT_L, COL_TEXT, "Connecting...");
-    c_net = ui_label(g, FONT_S, COL_MUTED, "");
+    c_net = ui_label(g, FONT_M, COL_MUTED, "");
     lv_label_set_long_mode(c_net, LV_LABEL_LONG_DOT);
-    lv_obj_set_style_max_width(c_net, 280, 0);
+    lv_obj_set_style_max_width(c_net, 420, 0);
 }
 
 // ---------------- screen 4 ----------------
@@ -135,7 +140,7 @@ static lv_obj_t *button(lv_obj_t *row, const char *text, lv_color_t bg, lv_color
     lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_opa(b, LV_OPA_80, LV_STATE_PRESSED);
     lv_obj_add_flag(b, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_t *l = ui_label(b, FONT_M, fg, text);
+    lv_obj_t *l = ui_label(b, FONT_MD, fg, text);
     lv_obj_center(l);
     lv_obj_add_event_cb(b, fail_btn_cb, LV_EVENT_CLICKED, (void *)(uintptr_t)cmd);
     return b;
@@ -157,10 +162,10 @@ static void countdown_cb(lv_timer_t *) {
 static void fail_view_create() {
     v_fail = view_create();
     lv_obj_t *g = center_group(v_fail);
-    wifi_off_icon(g, 40);
-    ui_label(g, FONT_L, COL_TEXT, "Can't connect");
-    f_net = ui_label(g, FONT_S, COL_MUTED, "");
-    f_reason = ui_label(g, FONT_S_BOLD, COL_STOPPED, "");
+    wifi_off_icon(g, 44);
+    ui_label(g, FONT_L_BOLD, COL_TEXT, "Can't connect");
+    f_net = ui_label(g, FONT_M, COL_MUTED, "");
+    f_reason = ui_label(g, FONT_M_BOLD, COL_STOPPED, "");
 
     f_countdown = ui_label(v_fail, FONT_S, COL_MUTED, "");
     f_progress = lv_bar_create(v_fail);
@@ -193,16 +198,16 @@ static void portal_view_create() {
     lv_obj_set_flex_grow(row, 1);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(row, 14, 0);
+    lv_obj_set_style_pad_column(row, 20, 0);
 
-    // QR in a white 104x104 frame (quiet zone for scanners)
+    // QR in a white frame (quiet zone for scanners)
     lv_obj_t *frame = ui_box(row);
-    lv_obj_set_size(frame, 104, 104);
+    lv_obj_set_size(frame, QR_FRAME, QR_FRAME);
     lv_obj_set_style_bg_color(frame, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(frame, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(frame, 6, 0);
+    lv_obj_set_style_radius(frame, 8, 0);
     lv_obj_t *qr = lv_qrcode_create(frame);
-    lv_qrcode_set_size(qr, 92);
+    lv_qrcode_set_size(qr, QR_FRAME - 14);
     lv_qrcode_set_dark_color(qr, COL_BG);
     lv_qrcode_set_light_color(qr, lv_color_white());
     char payload[128];
@@ -214,20 +219,20 @@ static void portal_view_create() {
     lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_grow(col, 1);
     lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(col, 1, 0);
-    ui_label(col, FONT_S, COL_MUTED, "Join this network");
-    ui_label(col, FONT_M, COL_CPU, SETUP_AP_SSID);
+    lv_obj_set_style_pad_row(col, 2, 0);
+    ui_label(col, FONT_M, COL_MUTED, "Join this network");
+    ui_label(col, FONT_L_BOLD, COL_CPU, SETUP_AP_SSID);
     if (strlen(SETUP_AP_PASSWORD)) {
         ui_label(col, FONT_S, COL_MUTED, "Password");
-        ui_label(col, FONT_M, COL_CPU, SETUP_AP_PASSWORD);
+        ui_label(col, FONT_MD_BOLD, COL_CPU, SETUP_AP_PASSWORD);
     }
-    lv_obj_t *then = ui_label(col, FONT_S, COL_MUTED, "Then open");
-    lv_obj_set_style_pad_top(then, 4, 0);
-    ui_label(col, FONT_M, COL_CPU, SETUP_AP_IP);
+    lv_obj_t *then = ui_label(col, FONT_M, COL_MUTED, "Then open");
+    lv_obj_set_style_pad_top(then, 6, 0);
+    ui_label(col, FONT_L_BOLD, COL_TEXT, SETUP_AP_IP);
     lv_obj_t *hint = ui_label(col, FONT_S, COL_MUTED, "The page may open automatically.");
     lv_label_set_long_mode(hint, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(hint, LV_PCT(100));
-    lv_obj_set_style_pad_top(hint, 4, 0);
+    lv_obj_set_style_pad_top(hint, 6, 0);
 
     waiting_card(v_portal);
 }
@@ -238,21 +243,21 @@ static void retry_view_create() {
     v_retry = view_create();
     lv_obj_t *g = center_group(v_retry);
     wifi_off_icon(g, 32);
-    ui_label(g, FONT_L, COL_TEXT, "Couldn't connect");
-    r_net = ui_label(g, FONT_S, COL_MUTED, "");
-    r_reason = ui_label(g, FONT_S_BOLD, COL_STOPPED, "");
+    ui_label(g, FONT_L_BOLD, COL_TEXT, "Couldn't connect");
+    r_net = ui_label(g, FONT_M, COL_MUTED, "");
+    r_reason = ui_label(g, FONT_M_BOLD, COL_STOPPED, "");
 
     lv_obj_t *info = ui_card(v_retry, 0);
-    lv_obj_set_size(info, LV_PCT(100), 50);
-    lv_obj_set_style_pad_hor(info, 10, 0);
+    lv_obj_set_size(info, LV_PCT(100), 52);
+    lv_obj_set_style_pad_hor(info, 12, 0);
     lv_obj_set_flex_flow(info, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(info, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
     lv_obj_set_style_pad_row(info, 4, 0);
     lv_obj_t *line1 = ui_box(info);
     lv_obj_set_size(line1, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_t *open = ui_label(line1, FONT_S, COL_TEXT, "Setup is open again");
+    lv_obj_t *open = ui_label(line1, FONT_M, COL_TEXT, "Setup is open again");
     lv_obj_align(open, LV_ALIGN_LEFT_MID, 0, 0);
-    r_attempt = ui_label(line1, FONT_S, COL_MUTED, "");
+    r_attempt = ui_label(line1, FONT_M, COL_MUTED, "");
     lv_obj_align(r_attempt, LV_ALIGN_RIGHT_MID, 0, 0);
     ui_label(info, FONT_S_BOLD, COL_CPU, SETUP_AP_SSID " " BULLET " " SETUP_AP_IP);
 
@@ -261,7 +266,12 @@ static void retry_view_create() {
 
 // ---------------- public ----------------
 
-lv_obj_t *ui_wifi_create() {
+static void back_cb(lv_event_t *) {
+    if (s_on_back) s_on_back();
+}
+
+lv_obj_t *ui_wifi_create(void (*on_back)()) {
+    s_on_back = on_back;
     s_scr = lv_obj_create(nullptr);
     lv_obj_remove_style_all(s_scr);
     lv_obj_set_style_bg_color(s_scr, COL_BG, 0);
@@ -270,14 +280,30 @@ lv_obj_t *ui_wifi_create() {
     lv_obj_set_style_text_font(s_scr, FONT_M, 0);
     lv_obj_remove_flag(s_scr, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Top bar: title left, gray Wi-Fi icon right
+    // Top bar: "‹ Back" (to tile 1), screen title, gray Wi-Fi icon right
     lv_obj_t *bar = ui_box(s_scr);
-    lv_obj_set_size(bar, SCREEN_W, UI_STATUS_H);
+    lv_obj_set_size(bar, SCREEN_W, BAR_H);
     lv_obj_set_style_pad_hor(bar, UI_PAD, 0);
-    s_bar_title = ui_label(bar, FONT_S, COL_TEXT, "Wi-Fi");
-    lv_obj_align(s_bar_title, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_obj_t *icon = ui_label(bar, FONT_S, COL_GRAY, LV_SYMBOL_WIFI);
-    lv_obj_align(icon, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_style_pad_top(bar, 4, 0);
+    lv_obj_set_flex_flow(bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(bar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(bar, 10, 0);
+
+    lv_obj_t *back = ui_box(bar);
+    lv_obj_set_size(back, LV_SIZE_CONTENT, BACK_H);
+    lv_obj_set_style_pad_hor(back, 12, 0);
+    lv_obj_set_style_radius(back, 10, 0);
+    lv_obj_set_style_bg_color(back, COL_CARD, 0);
+    lv_obj_set_style_bg_color(back, COL_SW_OFF, LV_STATE_PRESSED);
+    lv_obj_set_style_bg_opa(back, LV_OPA_COVER, 0);
+    lv_obj_add_flag(back, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(back, back_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_t *back_l = ui_label(back, FONT_M_BOLD, COL_TEXT, LV_SYMBOL_LEFT " Back");
+    lv_obj_center(back_l);
+
+    s_bar_title = ui_label(bar, FONT_M, COL_TEXT, "Wi-Fi");
+    lv_obj_set_flex_grow(s_bar_title, 1);
+    ui_label(bar, FONT_L, COL_GRAY, LV_SYMBOL_WIFI);
 
     connect_view_create();
     fail_view_create();

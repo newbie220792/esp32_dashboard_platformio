@@ -1,4 +1,4 @@
-// ESP32-S3 + ILI9341 dashboard: Pi 5 monitor (MQTT) + weather (Open-Meteo).
+// JC4827W543C (ESP32-S3, NV3041A 480x272) dashboard: Pi 5 monitor (MQTT) + weather (Open-Meteo).
 //
 // Threading model
 //   core 1  "lvgl"    : the only task that calls LVGL. Drains the app event
@@ -47,6 +47,7 @@ static void nav_button_poll() {
         long_fired = true;
         Serial.println("[main] BOOT held: resetting Wi-Fi");
         wifi_setup_command(WifiCmd::ResetAndPortal);
+        ui_wifi_reopen();                               // undo an earlier "Back"
     }
 #endif
 }
