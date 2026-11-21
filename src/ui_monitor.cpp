@@ -1,12 +1,18 @@
 #include "ui_monitor.h"
 
+#include <stdio.h>
+
 #include "app_config.h"
 #include "ui_theme.h"
 
 #define TEMP_MAX_C     85
 #define TEMP_HOT_C     70
-#define ARC_SIZE       88
-#define ARC_WIDTH      10
+#define GAUGE_ROW_H    80
+#define ARC_SIZE       56
+#define ARC_WIDTH      6
+#define SVC_ROW_H      20
+#define SVC_STATUS_W   48
+#define SVC_PORT_W     44
 #define STALE_CHECK_MS 1000
 
 struct Gauge {
@@ -15,19 +21,26 @@ struct Gauge {
     lv_obj_t *caption;
 };
 
+struct ServiceRow {
+    lv_obj_t *row, *name, *dot, *port;
+};
+
 static Gauge g_cpu, g_ram, g_temp;
+static lv_obj_t *s_svc_list;
+static lv_obj_t *s_svc_empty;
+static ServiceRow s_rows[MAX_SERVICES];
 static uint32_t s_last_rx_ms = 0;
 static bool s_have_data = false;
 
+// ---------------- gauges ----------------
+
 static void gauge_create(Gauge &g, lv_obj_t *row, lv_color_t color, const char *caption) {
-    lv_obj_t *card = ui_card(row, 6);
-    lv_obj_set_style_pad_hor(card, 4, 0);   // ~97px card -> ~89px inner, fits the 88px arc
+    lv_obj_t *card = ui_card(row, 4);
     lv_obj_set_height(card, LV_PCT(100));
     lv_obj_set_flex_grow(card, 1);
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);
-    // Center the arc + caption group vertically and horizontally in the card.
     lv_obj_set_flex_align(card, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(card, 8, 0);
+    lv_obj_set_style_pad_row(card, 1, 0);
 
     g.arc = lv_arc_create(card);
     lv_obj_set_size(g.arc, ARC_SIZE, ARC_SIZE);
@@ -45,7 +58,7 @@ static void gauge_create(Gauge &g, lv_obj_t *row, lv_color_t color, const char *
     lv_obj_set_style_arc_color(g.arc, color, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(g.arc, true, LV_PART_INDICATOR);
 
-    g.value = ui_label(g.arc, FONT_GAUGE, COL_MUTED, "--");
+    g.value = ui_label(g.arc, FONT_M, COL_MUTED, "--");
     lv_obj_center(g.value);
 
     g.caption = ui_label(card, FONT_S, COL_MUTED, caption);
@@ -66,19 +79,108 @@ static void stale_timer_cb(lv_timer_t *) {
     }
 }
 
+// ---------------- service list ----------------
+
+// Fixed-width cell; children laid out by the caller.
+static lv_obj_t *cell(lv_obj_t *row, int32_t w) {
+    lv_obj_t *c = ui_box(row);
+    lv_obj_set_size(c, w, LV_PCT(100));
+    return c;
+}
+
+static void header_row(lv_obj_t *card) {
+    lv_obj_t *h = ui_box(card);
+    lv_obj_set_size(h, LV_PCT(100), 14);
+    lv_obj_set_flex_flow(h, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(h, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *n = ui_label(h, FONT_S, COL_MUTED, "Service");
+    lv_obj_set_flex_grow(n, 1);
+    lv_obj_t *st = ui_label(cell(h, SVC_STATUS_W), FONT_S, COL_MUTED, "Status");
+    lv_obj_center(st);
+    lv_obj_t *pt = ui_label(cell(h, SVC_PORT_W), FONT_S, COL_MUTED, "Port");
+    lv_obj_align(pt, LV_ALIGN_RIGHT_MID, 0, 0);
+}
+
+static void service_row_create(ServiceRow &r) {
+    r.row = ui_box(s_svc_list);
+    lv_obj_set_size(r.row, LV_PCT(100), SVC_ROW_H);
+    lv_obj_set_flex_flow(r.row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(r.row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    r.name = ui_label(r.row, FONT_S_BOLD, COL_TEXT, "");
+    lv_obj_set_flex_grow(r.name, 1);
+    lv_label_set_long_mode(r.name, LV_LABEL_LONG_DOT);
+
+    lv_obj_t *st = cell(r.row, SVC_STATUS_W);
+    r.dot = ui_box(st);
+    lv_obj_set_size(r.dot, 8, 8);
+    lv_obj_set_style_radius(r.dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_center(r.dot);
+
+    lv_obj_t *pc = cell(r.row, SVC_PORT_W);
+    r.port = ui_label(pc, FONT_S, COL_MUTED, "-");
+    lv_obj_align(r.port, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_add_flag(r.row, LV_OBJ_FLAG_HIDDEN);
+}
+
+// running = filled green dot; stopped = hollow red ring (shape differs too,
+// so it reads without relying on colour).
+static void service_dot_set(lv_obj_t *dot, bool running) {
+    if (running) {
+        lv_obj_set_style_bg_color(dot, COL_OK, 0);
+        lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(dot, 0, 0);
+    } else {
+        lv_obj_set_style_bg_opa(dot, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_color(dot, COL_STOPPED, 0);
+        lv_obj_set_style_border_opa(dot, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(dot, 2, 0);
+    }
+}
+
+static void services_card_create(lv_obj_t *tile) {
+    lv_obj_t *card = ui_card(tile, 6);
+    lv_obj_set_style_pad_hor(card, 10, 0);
+    lv_obj_set_width(card, LV_PCT(100));
+    lv_obj_set_flex_grow(card, 1);
+    lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(card, 2, 0);
+
+    header_row(card);
+
+    s_svc_list = ui_box(card);
+    lv_obj_set_width(s_svc_list, LV_PCT(100));
+    lv_obj_set_flex_grow(s_svc_list, 1);
+    lv_obj_set_flex_flow(s_svc_list, LV_FLEX_FLOW_COLUMN);
+    // Must be clickable: LVGL picks the scroll target by walking up from the
+    // pressed object, and the (non-clickable) rows fall through to this list.
+    // Horizontal drags chain up to the tileview, so swiping still works.
+    lv_obj_add_flag(s_svc_list, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(s_svc_list, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(s_svc_list, LV_DIR_VER);
+    lv_obj_set_style_pad_right(s_svc_list, 6, 0);   // keep the port column clear of the scrollbar
+    ui_style_scrollbar(s_svc_list);
+
+    for (auto &r : s_rows) service_row_create(r);
+    s_svc_empty = ui_label(s_svc_list, FONT_S, COL_MUTED, "Waiting for " MQTT_TOPIC_SERVICES "...");
+}
+
+// ---------------- public ----------------
+
 void ui_monitor_create(lv_obj_t *tile) {
     lv_obj_set_flex_flow(tile, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(tile, UI_GAP, 0);
 
-    // Gauges row fills the whole tile (~304 x 204 inside the 8px padding).
     lv_obj_t *row = ui_box(tile);
-    lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_flex_grow(row, 1);
+    lv_obj_set_size(row, LV_PCT(100), GAUGE_ROW_H);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(row, UI_GAP, 0);
     gauge_create(g_cpu, row, COL_CPU, "CPU");
     gauge_create(g_ram, row, COL_RAM, "RAM");
     gauge_create(g_temp, row, COL_TEMP, "TEMP");
     lv_arc_set_range(g_temp.arc, 0, TEMP_MAX_C);
+
+    services_card_create(tile);
 
     lv_timer_create(stale_timer_cb, STALE_CHECK_MS, nullptr);
 }
@@ -99,4 +201,25 @@ void ui_monitor_update(const PiStats &s) {
     snprintf(buf, sizeof buf, "%d\xC2\xB0", (int)(s.temp + 0.5f));   // degree sign
     gauge_set(g_temp, (int32_t)(s.temp + 0.5f), buf);
     lv_obj_set_style_arc_color(g_temp.arc, s.temp > TEMP_HOT_C ? COL_HOT : COL_TEMP, LV_PART_INDICATOR);
+}
+
+void ui_monitor_set_services(const ServiceList &list) {
+    for (int i = 0; i < MAX_SERVICES; i++) {
+        ServiceRow &r = s_rows[i];
+        if (i >= list.count) {
+            lv_obj_add_flag(r.row, LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        const ServiceInfo &it = list.items[i];
+        lv_label_set_text(r.name, it.name);
+        service_dot_set(r.dot, it.running);
+        if (it.port >= 0) lv_label_set_text_fmt(r.port, "%ld", (long)it.port);
+        else lv_label_set_text(r.port, "-");
+        lv_obj_remove_flag(r.row, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (list.count) lv_obj_add_flag(s_svc_empty, LV_OBJ_FLAG_HIDDEN);
+    else {
+        lv_label_set_text(s_svc_empty, "No services reported");
+        lv_obj_remove_flag(s_svc_empty, LV_OBJ_FLAG_HIDDEN);
+    }
 }

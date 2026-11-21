@@ -6,38 +6,15 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
-struct PiStats {
-    float cpu;        // %
-    float ram;        // %
-    float ram_used;   // GB
-    float ram_total;  // GB
-    float temp;       // deg C
-};
-
-#define WEATHER_HOURS 4
-
-struct WeatherHour {
-    uint8_t hour;     // local hour 0..23
-    int16_t code;     // WMO weather code
-    bool    is_day;
-    float   temp;
-};
-
-struct WeatherData {
-    float   temp;
-    float   feels_like;
-    float   humidity;
-    float   wind_kmh;
-    int16_t code;
-    bool    is_day;
-    WeatherHour hours[WEATHER_HOURS];
-    uint8_t hour_count;
-};
+#include "models.h"
 
 enum class AppEventType : uint8_t {
     WifiState,     // .flag = connected
     MqttState,     // .flag = connected
     PiStats,       // .pi
+    Services,      // .services   (heap; receiver takes ownership, delete)
+    HomeConfig,    // .home       (heap; receiver takes ownership, delete)
+    SwitchState,   // .sw
     Weather,       // .weather
     WeatherError,
 };
@@ -45,14 +22,19 @@ enum class AppEventType : uint8_t {
 struct AppEvent {
     AppEventType type;
     union {
-        bool        flag;
-        PiStats     pi;
-        WeatherData weather;
+        bool         flag;
+        PiStats      pi;
+        ServiceList *services;
+        HomeConfig  *home;
+        SwitchState  sw;
+        WeatherData  weather;
     };
 };
 
 void app_events_init();
-bool app_events_post(const AppEvent &ev);           // safe from any task
+// Safe from any task. Never blocks; returns false if the queue is full, in
+// which case the caller still owns any heap pointer in `ev`.
+bool app_events_post(const AppEvent &ev);
 bool app_events_receive(AppEvent &ev, TickType_t wait);
 
 void app_post_flag(AppEventType type, bool flag);

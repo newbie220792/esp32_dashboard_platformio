@@ -24,3 +24,13 @@ lv_obj_t *ui_label(lv_obj_t *parent, const lv_font_t *font, lv_color_t color, co
     lv_label_set_text(l, text);
     return l;
 }
+
+void ui_style_scrollbar(lv_obj_t *obj) {
+    lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(obj, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_color(obj, COL_SCROLLBAR, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_SCROLLBAR);
+    lv_obj_set_style_radius(obj, 2, LV_PART_SCROLLBAR);
+    lv_obj_set_style_pad_right(obj, 0, LV_PART_SCROLLBAR);
+    lv_obj_set_style_pad_ver(obj, 0, LV_PART_SCROLLBAR);
+}

@@ -3,7 +3,7 @@
 static QueueHandle_t s_queue = nullptr;
 
 void app_events_init() {
-    s_queue = xQueueCreate(16, sizeof(AppEvent));
+    s_queue = xQueueCreate(24, sizeof(AppEvent));
 }
 
 bool app_events_post(const AppEvent &ev) {

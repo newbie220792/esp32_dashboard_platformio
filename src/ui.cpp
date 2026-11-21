@@ -5,11 +5,12 @@
 
 #include "app_config.h"
 #include "app_events.h"
+#include "ui_home.h"
 #include "ui_monitor.h"
 #include "ui_theme.h"
 #include "ui_weather.h"
 
-#define TILE_COUNT 2
+enum { TILE_MONITOR, TILE_WEATHER, TILE_HOME, TILE_COUNT };
 
 static lv_obj_t *s_tv;
 static lv_obj_t *s_tiles[TILE_COUNT];
@@ -34,13 +35,13 @@ static void refresh_status() {
         lv_obj_set_width(s_pills[i], i == t ? 16 : 6);
         lv_obj_set_style_bg_color(s_pills[i], i == t ? COL_CPU : COL_PILL_OFF, 0);
     }
-    if (t == 0) {
-        lv_label_set_text(s_title, "Pi 5 MQTT");
-        lv_obj_set_style_bg_color(s_dot, s_mqtt_ok ? COL_OK : COL_GRAY, 0);
-    } else {
-        lv_label_set_text(s_title, WEATHER_LOCATION);
-        lv_obj_set_style_bg_color(s_dot, s_weather_ok ? COL_OK : COL_GRAY, 0);
+    bool ok = s_mqtt_ok;
+    switch (t) {
+    case TILE_MONITOR: lv_label_set_text(s_title, "Pi 5 MQTT"); break;
+    case TILE_WEATHER: lv_label_set_text(s_title, WEATHER_LOCATION); ok = s_weather_ok; break;
+    case TILE_HOME:    lv_label_set_text(s_title, "Home MQTT"); break;
     }
+    lv_obj_set_style_bg_color(s_dot, ok ? COL_OK : COL_GRAY, 0);
     lv_obj_set_style_text_color(s_wifi, s_wifi_ok ? COL_OK : COL_GRAY, 0);
 }
 
@@ -123,13 +124,16 @@ void ui_init() {
     lv_obj_add_event_cb(s_tv, tile_changed_cb, LV_EVENT_VALUE_CHANGED, nullptr);
 
     for (int i = 0; i < TILE_COUNT; i++) {
-        lv_dir_t dir = (i == 0) ? LV_DIR_RIGHT : LV_DIR_LEFT;
+        lv_dir_t dir = LV_DIR_HOR;
+        if (i == 0) dir = LV_DIR_RIGHT;
+        if (i == TILE_COUNT - 1) dir = LV_DIR_LEFT;
         s_tiles[i] = lv_tileview_add_tile(s_tv, i, 0, dir);
         lv_obj_set_style_pad_all(s_tiles[i], UI_PAD, 0);
         lv_obj_remove_flag(s_tiles[i], LV_OBJ_FLAG_SCROLLABLE);
     }
-    ui_monitor_create(s_tiles[0]);
-    ui_weather_create(s_tiles[1]);
+    ui_monitor_create(s_tiles[TILE_MONITOR]);
+    ui_weather_create(s_tiles[TILE_WEATHER]);
+    ui_home_create(s_tiles[TILE_HOME]);
 
     status_bar_create(scr);   // created last so it draws above the tileview
     refresh_status();
@@ -154,8 +158,18 @@ void ui_process_events() {
     while (app_events_receive(ev, 0)) {
         switch (ev.type) {
         case AppEventType::WifiState:    s_wifi_ok = ev.flag; status_dirty = true; break;
-        case AppEventType::MqttState:    s_mqtt_ok = ev.flag; status_dirty = true; break;
+        case AppEventType::MqttState:
+            s_mqtt_ok = ev.flag;
+            ui_home_set_mqtt(ev.flag);
+            status_dirty = true;
+            break;
         case AppEventType::PiStats:      ui_monitor_update(ev.pi); break;
+        case AppEventType::Services:
+            ui_monitor_set_services(*ev.services);
+            delete ev.services;
+            break;
+        case AppEventType::HomeConfig:   ui_home_set_config(ev.home); break;   // takes ownership
+        case AppEventType::SwitchState:  ui_home_apply_state(ev.sw); break;
         case AppEventType::Weather:
             ui_weather_update(ev.weather);
             s_weather_ok = true;

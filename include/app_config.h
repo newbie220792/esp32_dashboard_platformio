@@ -41,7 +41,11 @@
 #define AUTO_ROTATE_MS     0       // switch tile automatically (ms); 0 = off
 
 // ---------------- MQTT ----------------
-#define MQTT_TOPIC_STATS   "pi5/stats"
+#define MQTT_TOPIC_STATS       "pi5/stats"
+#define MQTT_TOPIC_SERVICES    "pi5/services"
+#define MQTT_TOPIC_HOME_CONFIG "home/config"
+#define MQTT_TOPIC_HOME_STATE  "home/+/+/+/state"   // .../set is published
+#define SWITCH_PENDING_MS      3000   // revert dimmed switch if no .../state
 #define MQTT_STALE_MS      10000   // no message for this long -> dot gray
 
 // ---------------- Weather (Open-Meteo) ----------------

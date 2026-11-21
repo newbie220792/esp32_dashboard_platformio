@@ -1,4 +1,5 @@
 #include "weather_icon.h"
+#include "icon_draw.h"
 #include "ui_theme.h"
 
 enum IconKind : uint8_t { IC_SUN, IC_MOON, IC_PARTLY_DAY, IC_PARTLY_NIGHT, IC_CLOUD, IC_FOG, IC_RAIN, IC_SNOW, IC_STORM };
@@ -48,95 +49,36 @@ const char *weather_code_text(int code) {
     }
 }
 
-// --- drawing helpers (coordinates in 0..100 units of the icon box) -------
-
-struct Ctx {
-    lv_layer_t *layer;
-    int32_t x0, y0, s;
-    lv_color_t bg;    // parent background, used for the moon cut-out
-};
-
-static int32_t X(const Ctx &c, int32_t u) { return c.x0 + u * c.s / 100; }
-static int32_t Y(const Ctx &c, int32_t u) { return c.y0 + u * c.s / 100; }
-
-static void circle(const Ctx &c, int32_t cx, int32_t cy, int32_t r, lv_color_t col) {
-    lv_draw_rect_dsc_t d;
-    lv_draw_rect_dsc_init(&d);
-    d.bg_color = col;
-    d.bg_opa = LV_OPA_COVER;
-    d.radius = LV_RADIUS_CIRCLE;
-    int32_t rp = r * c.s / 100;
-    lv_area_t a = {X(c, cx) - rp, Y(c, cy) - rp, X(c, cx) + rp, Y(c, cy) + rp};
-    lv_draw_rect(c.layer, &d, &a);
-}
-
-static void rrect(const Ctx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t col) {
-    lv_draw_rect_dsc_t d;
-    lv_draw_rect_dsc_init(&d);
-    d.bg_color = col;
-    d.bg_opa = LV_OPA_COVER;
-    d.radius = LV_RADIUS_CIRCLE;
-    lv_area_t a = {X(c, x1), Y(c, y1), X(c, x2), Y(c, y2)};
-    lv_draw_rect(c.layer, &d, &a);
-}
-
-static void line(const Ctx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t w, lv_color_t col) {
-    lv_draw_line_dsc_t d;
-    lv_draw_line_dsc_init(&d);
-    d.color = col;
-    d.width = LV_MAX(1, w * c.s / 100);
-    d.round_start = 1;
-    d.round_end = 1;
-    d.p1.x = X(c, x1); d.p1.y = Y(c, y1);
-    d.p2.x = X(c, x2); d.p2.y = Y(c, y2);
-    lv_draw_line(c.layer, &d);
-}
-
-static void sun(const Ctx &c, int32_t cx, int32_t cy, int32_t r) {
+static void sun(const IconCtx &c, int32_t cx, int32_t cy, int32_t r) {
     // 8 rays then disc
     static const int8_t dir[8][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {7, -7}, {7, 7}, {-7, 7}, {-7, -7}};
     for (auto &d : dir) {
         int32_t dx = d[0], dy = d[1];
         int32_t len = (dx && dy) ? 10 : 1;   // diagonals use 7/10 ~ 1/sqrt2
         int32_t r1 = r + r / 3, r2 = r + r * 2 / 3;
-        line(c, cx + dx * r1 / len, cy + dy * r1 / len, cx + dx * r2 / len, cy + dy * r2 / len,
+        icon_line(c, cx + dx * r1 / len, cy + dy * r1 / len, cx + dx * r2 / len, cy + dy * r2 / len,
              LV_MAX(4, r / 4), C_SUN);
     }
-    circle(c, cx, cy, r, C_SUN);
+    icon_circle(c, cx, cy, r, C_SUN);
 }
 
-static void moon(const Ctx &c, int32_t cx, int32_t cy, int32_t r) {
-    circle(c, cx, cy, r, C_MOON);
-    circle(c, cx + r * 5 / 10, cy - r * 4 / 10, r * 8 / 10, c.bg);
+static void moon(const IconCtx &c, int32_t cx, int32_t cy, int32_t r) {
+    icon_circle(c, cx, cy, r, C_MOON);
+    icon_circle(c, cx + r * 5 / 10, cy - r * 4 / 10, r * 8 / 10, c.bg);
 }
 
 // Cloud centred around (cx, cy), roughly 70 x 40 units at scale 100.
-static void cloud(const Ctx &c, int32_t cx, int32_t cy, int32_t scale, lv_color_t col) {
+static void cloud(const IconCtx &c, int32_t cx, int32_t cy, int32_t scale, lv_color_t col) {
     auto S = [&](int32_t v) { return v * scale / 100; };
-    circle(c, cx - S(14), cy + S(2), S(14), col);
-    circle(c, cx + S(6), cy - S(6), S(19), col);
-    circle(c, cx + S(22), cy + S(4), S(12), col);
-    rrect(c, cx - S(28), cy + S(2), cx + S(34), cy + S(16), col);
+    icon_circle(c, cx - S(14), cy + S(2), S(14), col);
+    icon_circle(c, cx + S(6), cy - S(6), S(19), col);
+    icon_circle(c, cx + S(22), cy + S(4), S(12), col);
+    icon_rrect(c, cx - S(28), cy + S(2), cx + S(34), cy + S(16), -1, col);
 }
 
 static void draw_cb(lv_event_t *e) {
     lv_obj_t *obj = (lv_obj_t *)lv_event_get_target(e);
-    lv_area_t a;
-    lv_obj_get_coords(obj, &a);
-
-    Ctx c;
-    c.layer = lv_event_get_layer(e);
-    c.x0 = a.x1;
-    c.y0 = a.y1;
-    c.s = LV_MIN(lv_area_get_width(&a), lv_area_get_height(&a));
-    // Nearest opaque ancestor's colour, for the moon's cut-out.
-    c.bg = COL_BG;
-    for (lv_obj_t *p = lv_obj_get_parent(obj); p; p = lv_obj_get_parent(p)) {
-        if (lv_obj_get_style_bg_opa(p, LV_PART_MAIN) >= LV_OPA_50) {
-            c.bg = lv_obj_get_style_bg_color(p, LV_PART_MAIN);
-            break;
-        }
-    }
+    IconCtx c = icon_ctx(e);
 
     switch ((IconKind)(uintptr_t)lv_obj_get_user_data(obj)) {
     case IC_SUN:          sun(c, 50, 50, 22); break;
@@ -146,22 +88,22 @@ static void draw_cb(lv_event_t *e) {
     case IC_CLOUD:        cloud(c, 48, 48, 115, C_CLOUD); break;
     case IC_FOG:
         cloud(c, 48, 36, 95, C_CLOUD);
-        line(c, 18, 70, 82, 70, 7, COL_MUTED);
-        line(c, 26, 84, 74, 84, 7, COL_MUTED);
+        icon_line(c, 18, 70, 82, 70, 7, COL_MUTED);
+        icon_line(c, 26, 84, 74, 84, 7, COL_MUTED);
         break;
     case IC_RAIN:
         cloud(c, 48, 36, 100, C_CLOUD);
-        for (int i = 0; i < 3; i++) line(c, 34 + i * 16, 66, 28 + i * 16, 86, 6, C_RAIN);
+        for (int i = 0; i < 3; i++) icon_line(c, 34 + i * 16, 66, 28 + i * 16, 86, 6, C_RAIN);
         break;
     case IC_SNOW:
         cloud(c, 48, 36, 100, C_CLOUD);
-        for (int i = 0; i < 3; i++) circle(c, 32 + i * 18, 76 + (i % 2) * 8, 5, COL_TEXT);
+        for (int i = 0; i < 3; i++) icon_circle(c, 32 + i * 18, 76 + (i % 2) * 8, 5, COL_TEXT);
         break;
     case IC_STORM:
         cloud(c, 48, 34, 100, C_CLOUD);
-        line(c, 54, 56, 42, 74, 8, C_SUN);
-        line(c, 42, 74, 56, 74, 8, C_SUN);
-        line(c, 56, 74, 44, 92, 8, C_SUN);
+        icon_line(c, 54, 56, 42, 74, 8, C_SUN);
+        icon_line(c, 42, 74, 56, 74, 8, C_SUN);
+        icon_line(c, 56, 74, 44, 92, 8, C_SUN);
         break;
     }
 }
