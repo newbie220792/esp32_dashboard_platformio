@@ -97,6 +97,9 @@ struct WeatherData {
     uint8_t hour_count;
 };
 
+// Why the last weather fetch failed (shown on the weather card).
+enum class WeatherErr : uint8_t { NoNetwork, Timeout, ServerError, BadData };
+
 // ---------------- Wi-Fi setup flow (wifi_setup.cpp -> ui_wifi.cpp) ----------------
 enum class WifiSetupState : uint8_t {
     Connecting,       // trying secrets.h / saved network (screen: spinner)

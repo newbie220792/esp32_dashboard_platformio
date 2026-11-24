@@ -53,12 +53,14 @@
 #define SWITCH_PENDING_MS      3000   // revert dimmed switch if no .../state
 #define MQTT_STALE_MS      10000   // no message for this long -> dot gray
 
+
 // ---------------- Weather (Open-Meteo) ----------------
 #define WEATHER_LOCATION   "Ho Chi Minh"
 #define WEATHER_LAT        10.8231
 #define WEATHER_LON        106.6297
 #define WEATHER_REFRESH_MS (10UL * 60UL * 1000UL)
-#define WEATHER_RETRY_MS   (30UL * 1000UL)
+#define WEATHER_RETRY_MS     (30UL * 1000UL)         // first retry; doubles on each failure
+#define WEATHER_RETRY_MAX_MS (10UL * 60UL * 1000UL)   // backoff cap
 
 // ---------------- Time ----------------
 #define NTP_SERVER_1  "pool.ntp.org"

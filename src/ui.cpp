@@ -5,6 +5,7 @@
 
 #include "app_config.h"
 #include "app_events.h"
+#include "net_state.h"
 #include "ui_home.h"
 #include "ui_monitor.h"
 #include "ui_theme.h"
@@ -51,6 +52,26 @@ static void refresh_status() {
     lv_obj_set_style_bg_color(s_dot, ok ? COL_OK : COL_GRAY, 0);
     lv_obj_set_style_text_color(s_wifi, s_wifi_ok ? COL_OK : COL_GRAY, 0);
 }
+
+// Pull the connection state (never pushed as events, so nothing can be lost).
+// Runs every 500 ms, once at start-up and on Back, on the LVGL task.
+static void net_poll() {
+    static bool first = true;
+    const NetState ns = net_state_get();
+    const bool wifi_changed = first || ns.wifi_connected != s_wifi_ok;
+    const bool mqtt_changed = first || ns.mqtt_connected != s_mqtt_ok;
+    first = false;
+    if (!wifi_changed && !mqtt_changed) return;
+
+    s_wifi_ok = ns.wifi_connected;
+    s_mqtt_ok = ns.mqtt_connected;
+    if (mqtt_changed) ui_home_set_mqtt(s_mqtt_ok);
+    refresh_status();
+    Serial.printf("[ui] status bar: wifi=%d (%s) mqtt=%d\n", s_wifi_ok, s_wifi_ok ? "#3DDC84" : "#6B7788",
+                  s_mqtt_ok);
+}
+
+static void net_timer_cb(lv_timer_t *) { net_poll(); }
 
 static void clock_timer_cb(lv_timer_t *) {
     time_t now = time(nullptr);
@@ -151,6 +172,8 @@ void ui_init() {
     status_bar_create(scr);   // created last so it draws above the tileview
     refresh_status();
 
+    lv_timer_create(net_timer_cb, 500, nullptr);
+    net_poll();
     lv_timer_create(clock_timer_cb, 1000, nullptr);
     clock_timer_cb(nullptr);
 #if AUTO_ROTATE_MS > 0
@@ -179,6 +202,7 @@ static void on_wifi_setup(const WifiSetupInfo &info) {
 void ui_wifi_back() {
     s_wifi_dismissed = true;
     lv_tileview_set_tile_by_index(s_tv, TILE_MONITOR, 0, LV_ANIM_OFF);
+    net_poll();
     refresh_status();
     lv_screen_load(s_main_scr);
 }
@@ -200,13 +224,7 @@ void ui_process_events() {
     bool status_dirty = false;
     while (app_events_receive(ev, 0)) {
         switch (ev.type) {
-        case AppEventType::WifiState:    s_wifi_ok = ev.flag; status_dirty = true; break;
-        case AppEventType::WifiSetup:    on_wifi_setup(ev.wifi); break;
-        case AppEventType::MqttState:
-            s_mqtt_ok = ev.flag;
-            ui_home_set_mqtt(ev.flag);
-            status_dirty = true;
-            break;
+        case AppEventType::WifiSetup:    on_wifi_setup(ev.wifi); net_poll(); break;
         case AppEventType::PiStats:      ui_monitor_update(ev.pi); break;
         case AppEventType::Services:
             ui_monitor_set_services(*ev.services);
@@ -219,7 +237,11 @@ void ui_process_events() {
             s_weather_ok = true;
             status_dirty = true;
             break;
-        case AppEventType::WeatherError: s_weather_ok = false; status_dirty = true; break;
+        case AppEventType::WeatherError:
+            ui_weather_set_error(ev.werr);
+            s_weather_ok = false;
+            status_dirty = true;
+            break;
         }
     }
     if (status_dirty) refresh_status();

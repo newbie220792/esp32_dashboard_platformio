@@ -9,15 +9,14 @@
 #include "models.h"
 
 enum class AppEventType : uint8_t {
-    WifiState,     // .flag = connected
+    // Wi-Fi / MQTT connection state is not an event: the UI polls net_state.h.
     WifiSetup,     // .wifi       (setup flow screen state)
-    MqttState,     // .flag = connected
     PiStats,       // .pi
     Services,      // .services   (heap; receiver takes ownership, delete)
     HomeConfig,    // .home       (heap; receiver takes ownership, delete)
     SwitchState,   // .sw
     Weather,       // .weather
-    WeatherError,
+    WeatherError,  // .werr
 };
 
 struct AppEvent {
@@ -30,6 +29,7 @@ struct AppEvent {
         SwitchState  sw;
         WeatherData  weather;
         WifiSetupInfo wifi;
+        WeatherErr   werr;
     };
 };
 

@@ -8,6 +8,7 @@
 
 #include "app_config.h"
 #include "app_events.h"
+#include "net_state.h"
 #include "parsers.h"
 #include "secrets.h"
 #include "wifi_manager.h"
@@ -94,7 +95,7 @@ static void on_message(char *topic, uint8_t *payload, unsigned int len) {
 static void set_connected(bool c) {
     if (s_connected == c) return;
     s_connected = c;
-    app_post_flag(AppEventType::MqttState, c);
+    net_state_set_mqtt(c);
     if (!c) xQueueReset(s_cmd_queue);   // don't replay stale taps after reconnect
 }
 

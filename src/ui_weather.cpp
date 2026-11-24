@@ -10,7 +10,10 @@
 #define HOUR_ICON    28
 #define STATS_W      150
 
-static lv_obj_t *s_icon, *s_temp, *s_unit, *s_cond, *s_feels, *s_hum, *s_wind, *s_rain;
+static lv_obj_t *s_icon, *s_temp, *s_unit, *s_cond, *s_feels, *s_hum, *s_wind, *s_rain, *s_stale;
+static bool s_have_data = false;
+static bool s_failing = false;      // last fetch failed
+static uint32_t s_last_ok_ms = 0;   // lv_tick of the last good fetch
 
 struct HourCard {
     lv_obj_t *time, *icon, *temp;
@@ -42,6 +45,29 @@ static void hour_card_create(HourCard &h, lv_obj_t *row, bool highlight) {
     h.icon = weather_icon_create(card, HOUR_ICON);
     h.temp = ui_label(card, FONT_MD_BOLD, fg, "--" DEG);
 }
+
+static const char *err_text(WeatherErr e) {
+    switch (e) {
+    case WeatherErr::NoNetwork:   return "No network";
+    case WeatherErr::Timeout:     return "Timeout";
+    case WeatherErr::ServerError: return "Server error";
+    case WeatherErr::BadData:     return "Bad response";
+    }
+    return "";
+}
+
+static void stale_refresh() {
+    if (!s_have_data || !s_failing) {
+        lv_obj_add_flag(s_stale, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    const uint32_t min = lv_tick_elaps(s_last_ok_ms) / 60000;
+    if (min == 0) lv_label_set_text(s_stale, "Updated just now");
+    else lv_label_set_text_fmt(s_stale, "Updated %lu min ago", (unsigned long)min);
+    lv_obj_remove_flag(s_stale, LV_OBJ_FLAG_HIDDEN);
+}
+
+static void stale_timer_cb(lv_timer_t *) { stale_refresh(); }
 
 void ui_weather_create(lv_obj_t *tile) {
     lv_obj_set_flex_flow(tile, LV_FLEX_FLOW_COLUMN);
@@ -78,11 +104,16 @@ void ui_weather_create(lv_obj_t *tile) {
     lv_obj_t *right = ui_box(big);
     lv_obj_set_size(right, STATS_W, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(right, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(right, 10, 0);
+    lv_obj_set_style_pad_row(right, 6, 0);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, 0, 0);
     stat_row(right, "Humidity", &s_hum);
     stat_row(right, "Wind", &s_wind);
     stat_row(right, "Rain chance", &s_rain);
+    s_stale = ui_label(right, FONT_S, COL_TEMP, "");   // only while fetches fail
+    lv_obj_set_style_text_align(s_stale, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_width(s_stale, LV_PCT(100));
+    lv_obj_add_flag(s_stale, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_create(stale_timer_cb, 30000, nullptr);
 
     // ---- now + next 4 hours ---------------------------------------------
     lv_obj_t *row = ui_box(tile);
@@ -94,6 +125,10 @@ void ui_weather_create(lv_obj_t *tile) {
 }
 
 void ui_weather_update(const WeatherData &w) {
+    s_have_data = true;
+    s_failing = false;
+    s_last_ok_ms = lv_tick_get();
+    stale_refresh();
     weather_icon_set(s_icon, w.code, w.is_day);
     lv_label_set_text_fmt(s_temp, "%d", (int)lroundf(w.temp));
     lv_label_set_text(s_cond, weather_code_text(w.code));
@@ -118,4 +153,13 @@ void ui_weather_update(const WeatherData &w) {
             lv_label_set_text(h.temp, "--" DEG);
         }
     }
+}
+
+void ui_weather_set_error(WeatherErr e) {
+    s_failing = true;
+    if (!s_have_data) {
+        lv_label_set_text(s_cond, "Weather unavailable");
+        lv_label_set_text(s_feels, err_text(e));
+    }
+    stale_refresh();
 }

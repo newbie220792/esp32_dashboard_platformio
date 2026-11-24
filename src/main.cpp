@@ -7,7 +7,7 @@
 //   core 0  "wifi"    : boot-time setup flow (secrets.h -> NVS -> WiFiManager
 //                       portal), then reconnect supervision, NTP setup
 //           "mqtt"    : PubSubClient loop, parses pi5/stats
-//           "weather" : HTTPS poll every 10 min
+//           "weather" : HTTPS poll every 10 min (backoff on errors)
 //   Network tasks only post copies of their data to the queue (app_events).
 
 #include <Arduino.h>

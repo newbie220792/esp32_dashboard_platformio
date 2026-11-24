@@ -29,7 +29,8 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
   thử đổi hai chỗ này trước.
 - Chỉ xoay được 0° hoặc 180° (`TFT_ROTATION` 0 hoặc 2), không dùng 90°/270°.
 - Thẻ SD dùng chung bus với màn: nếu sau này dùng SD thì phải sắp thứ tự thao tác và kiểm tra lại cảm ứng.
-- Flash chỉ 4 MB (`huge_app.csv`, 3 MB cho app): chỉ bật font và widget LVGL đang dùng.
+- Flash chỉ 4 MB (`huge_app.csv`, 3 MB cho app, không có OTA; nạp firmware qua USB): chỉ bật font và widget
+  LVGL đang dùng.
 - Draw buffer: 2 buffer 1/4 màn hình (480x68) trong PSRAM, chế độ partial.
 
 ## Công nghệ
@@ -55,7 +56,10 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - `src/models.h`, `src/parsers.*`: struct dữ liệu và hàm parse JSON/topic thuần (không phụ thuộc
   Arduino/LVGL). Env `native` chỉ biên dịch `parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
 - Không đặt tên file `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>` (dùng `wifi_manager.*`).
-- `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD` (không commit, không đọc). Mẫu: `include/secrets.example.h`
+- `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD` (không commit, không đọc).
+  Mẫu: `include/secrets.example.h`
+- `src/net_state.*`: trạng thái Wi-Fi/MQTT dùng chung (xem "Quy tắc code").
+  `src/ca_certs.h`: CA gốc ISRG Root X1 cho Open-Meteo (hết hạn 2035).
 - Luồng Wi-Fi chi tiết: `.claude/rules/wifi.md`. Đặc tả màn 3: `.claude/rules/home.md`.
 
 ## Dữ liệu (MQTT)
@@ -73,7 +77,10 @@ Một client MQTT duy nhất (`mqtt.cpp`). Bảng `kRoutes` vừa để subscrib
 
 - `status` khác `running` được coi là `stopped`. JSON hỏng thì bỏ qua và giữ dữ liệu cũ.
 - id phòng hoặc cụm chứa `/`, `+`, `#` sẽ bị bỏ qua. Giới hạn: 8 phòng, 6 cụm mỗi phòng.
-- Thời tiết: Open-Meteo, làm mới mỗi 10 phút.
+- Thời tiết: Open-Meteo qua HTTPS (kiểm tra CA, nên phải chờ NTP), làm mới mỗi 10 phút; lỗi thì thử lại sau
+  30 s, 60 s, 120 s... tối đa 10 phút. **Phải `http.useHTTP10(true)`**: với HTTP/1.1 Open-Meteo trả chunked,
+  `getStream()` đưa cả dòng độ dài chunk (`142\r\n{...`) và ArduinoJson đọc nó như số `142`, "thành công" mà không có
+  dữ liệu. Lỗi giữ dữ liệu cũ kèm `Updated N min ago`; chưa có dữ liệu thì `Weather unavailable` + lý do.
 
 ## Quy ước giao diện (480x272, nền tối, phẳng)
 
@@ -98,6 +105,9 @@ Một client MQTT duy nhất (`mqtt.cpp`). Bảng `kRoutes` vừa để subscrib
 ## Quy tắc code
 
 - Chỉ gọi hàm LVGL từ task LVGL (hoặc bọc bằng mutex). Chỉ task `mqtt` được dùng PubSubClient.
+- Trạng thái kết nối **không** gửi qua `AppEvent` (hàng đợi bỏ sự kiện khi đầy, mất một sự kiện là icon sai mãi):
+  task mạng ghi `net_state`, `ui.cpp` đọc bằng `lv_timer` 500 ms. Task `wifi` đọc lại `WiFi.status()` + IP mỗi 250 ms
+  và đồng bộ cả `BIT_CONNECTED`, vì sự kiện `DISCONNECTED` có thể đến sau `GOT_IP`.
 - Task mạng gửi bản sao dữ liệu qua `AppEvent`. Dữ liệu lớn (`ServiceList`, `HomeConfig`) gửi bằng
   con trỏ heap: bên nhận chịu trách nhiệm `delete`; nếu `app_events_post` thất bại thì bên gửi tự xóa.
 - Lệnh từ giao diện (`mqtt_request_switch`) chỉ đưa vào hàng đợi, task `mqtt` mới publish.
