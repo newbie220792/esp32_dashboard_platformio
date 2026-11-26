@@ -14,7 +14,7 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - MCU: ESP32-S3-WROOM-1 N4R8 (flash 4 MB, PSRAM 8 MB octal). Mô tả của người bán ghi "LX6" là sai.
   `board = esp32-s3-devkitc-1` + `board_build.arduino.memory_type = qio_opi` + `-DBOARD_HAS_PSRAM`;
   thiếu `qio_opi` thì không có PSRAM (draw buffer tự lùi về 20 dòng trong RAM nội, chậm hơn).
-- Màn hình: IPS 480x272, driver **NV3041A qua QSPI**. Chân trong `include/app_config.h`
+- Màn hình: IPS 480x272, driver **NV3041A qua QSPI**. Chân trong `include/board_pins.h`
   (lấy từ cấu hình ESPHome của board): CS=45 CLK=47 D0=21 D1=48 D2=40 D3=39, đèn nền BL=1 bật cố định
   sáng nhất. Không có chân reset màn hình.
 - Cảm ứng: GT911 (I2C, TouchLib trong `lib/`) SDA=8 SCL=4 RST=38 INT=3, tọa độ thô 480x272.
@@ -51,21 +51,41 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - Giả lập công tắc (không cần thiết bị thật): `python3 tools/home_sim.py --host <broker> [--drop 3]`.
   `--drop N` bỏ qua lệnh thứ N để thử hết thời gian chờ.
 
-## Cấu trúc thư mục
+## Cấu trúc thư mục và các tầng
 
-- `src/models.h`, `src/parsers.*`: struct dữ liệu và hàm parse JSON/topic thuần (không phụ thuộc
-  Arduino/LVGL). Env `native` chỉ biên dịch `parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
-- Không đặt tên file `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>` (dùng `wifi_manager.*`).
+Chỉ được phụ thuộc **xuống dưới** (kiểm tra bằng `grep` trước khi commit):
+
+```
+app       src/app/app.*        khởi tạo theo thứ tự, tạo mọi task (stack + priority chỉ ở app.cpp)
+ui        src/ui/              ui_manager, theme, components/, screens/   ← chỉ tầng này gọi lv_*
+services  src/services/        wifi, time, mqtt, pi5, home, weather      ← không include ui/, không lv_*
+core      src/core/            state, events, config, models, parsers    ← không include services/ui/hal
+hal       src/hal/             display, touch, backlight, button         ← chỉ biết phần cứng + driver LVGL
+```
+
+- `ui` không include `hal/` hay `board_pins.h` (kích thước màn lấy bằng `lv_display_get_*` / `LV_PCT`).
+- Thứ tự khởi tạo (`app_init`): `state`/`events` → `hal` (button, display + LVGL, backlight, touch) → `ui_init` →
+  `wifi` → `time` → `mqtt` → `pi5`, `home`, `weather` (đăng ký route MQTT trước khi task `mqtt` chạy) → tạo task.
+- `main.cpp` chỉ gọi `app_init()`. Include theo dạng `#include "services/wifi_service.h"` (`-I src`).
+- `include/board_pins.h`: chân GPIO, kích thước panel (chỉ `hal/` dùng). `include/app_config.h`: topic, chu kỳ,
+  thời gian chờ, vị trí thời tiết.
+- `core/config.*`: **file duy nhất include `secrets.h`** (`config_wifi_ssid()`, `config_mqtt_host()`, ...) và đọc/ghi
+  mạng đã lưu trong NVS (`wifi_cfg`).
+- `core/models.h`, `core/parsers.*`: struct và hàm parse JSON/topic thuần (không phụ thuộc Arduino/LVGL).
+  Env `native` chỉ biên dịch `core/parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
+- `services/ca_certs.h`: CA gốc ISRG Root X1 cho Open-Meteo (hết hạn 2035).
+- Không đặt tên file `wifi.h`: macOS không phân biệt hoa thường nên sẽ che mất `<WiFi.h>` (dùng `wifi_service.*`).
 - `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD` (không commit, không đọc).
   Mẫu: `include/secrets.example.h`
-- `src/net_state.*`: trạng thái Wi-Fi/MQTT dùng chung (xem "Quy tắc code").
-  `src/ca_certs.h`: CA gốc ISRG Root X1 cho Open-Meteo (hết hạn 2035).
-- Luồng Wi-Fi chi tiết: `.claude/rules/wifi.md`. Đặc tả màn 3: `.claude/rules/home.md`.
+- Topic MQTT chi tiết: `docs/mqtt_topics.md`. Luồng Wi-Fi: `.claude/rules/wifi.md`. Màn 3: `.claude/rules/home.md`.
+- **Thêm tab mới** = 1 service (nếu có dữ liệu mới: struct + nhóm `StateGroup` trong `core/state`) + 1 `screen_*`
+  (`create` + `poll`) + 1 dòng trong `kTiles` (`ui_manager.cpp`). **Thêm topic** = 1 handler + `mqtt_service_route()`.
 
 ## Dữ liệu (MQTT)
 
-Một client MQTT duy nhất (`mqtt.cpp`). Bảng `kRoutes` vừa để subscribe vừa để phân phối theo topic
-(`mqtt_topic_matches`, hỗ trợ `+`/`#`). Buffer 4096 byte cho `home/config`.
+Một client MQTT duy nhất (`services/mqtt_service.cpp`): chỉ lo kết nối, publish qua hàng đợi và định tuyến.
+Các service đăng ký `mqtt_service_route(filter, handler)` trong `*_init()`; mọi filter được subscribe mỗi lần
+kết nối, tin nhắn đi tới route đầu tiên khớp (`mqtt_topic_matches`, hỗ trợ `+`/`#`). Buffer 4096 byte cho `home/config`.
 
 | Topic                           | Hướng                               | Payload                                                                                         |
 | ------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -100,19 +120,24 @@ Một client MQTT duy nhất (`mqtt.cpp`). Bảng `kRoutes` vừa để subscrib
 - Danh sách service: cột Status chỉ có chấm (đặc xanh = running, vòng rỗng đỏ `#FF6B6B` = stopped).
 - Danh sách cuộn dọc: container phải bật CLICKABLE (LVGL tìm đối tượng cuộn từ đối tượng được chạm
   đi lên cha, còn `ui_box()` tắt CLICKABLE), và chỉ đặt `LV_DIR_VER` để vuốt ngang vẫn đổi màn.
-  Thanh cuộn 3px `#3A4656` qua `ui_style_scrollbar()`.
+  Thanh cuộn 3px `#3A4656` qua `ui_style_scrollbar()` (`ui/theme.h`).
 
 ## Quy tắc code
 
-- Chỉ gọi hàm LVGL từ task LVGL (hoặc bọc bằng mutex). Chỉ task `mqtt` được dùng PubSubClient.
-- Trạng thái kết nối **không** gửi qua `AppEvent` (hàng đợi bỏ sự kiện khi đầy, mất một sự kiện là icon sai mãi):
-  task mạng ghi `net_state`, `ui.cpp` đọc bằng `lv_timer` 500 ms. Task `wifi` đọc lại `WiFi.status()` + IP mỗi 250 ms
-  và đồng bộ cả `BIT_CONNECTED`, vì sự kiện `DISCONNECTED` có thể đến sau `GOT_IP`.
-- Task mạng gửi bản sao dữ liệu qua `AppEvent`. Dữ liệu lớn (`ServiceList`, `HomeConfig`) gửi bằng
-  con trỏ heap: bên nhận chịu trách nhiệm `delete`; nếu `app_events_post` thất bại thì bên gửi tự xóa.
-- Lệnh từ giao diện (`mqtt_request_switch`) chỉ đưa vào hàng đợi, task `mqtt` mới publish.
+- Chỉ tầng `ui` gọi LVGL, và chỉ từ task `lvgl` (`ui_task`, nơi duy nhất gọi `lv_timer_handler()`).
+  `hal/display` và `hal/touch` được gọi API driver LVGL lúc khởi tạo. Chỉ task `mqtt` dùng PubSubClient.
+- **Dữ liệu đi qua state store** (`core/state.*`), không qua hàng đợi: service ghi `state_set_*()`, mỗi nhóm có
+  `state_version()`; screen chỉ sao chép khi version đổi (`screen_*_poll()`, gọi bởi `lv_timer` 250 ms và mỗi
+  khi có event). `core/events` chỉ là tín hiệu đánh thức không mang dữ liệu: mất một event không mất dữ liệu
+  (trước đây mất một sự kiện Wi-Fi là icon sai mãi).
+- Task `wifi` đọc lại `WiFi.status()` + IP mỗi 250 ms và đồng bộ cả `BIT_CONNECTED`, vì sự kiện `DISCONNECTED`
+  có thể đến sau `GOT_IP`.
+- Lệnh từ giao diện đi qua hàm của service (`home_service_set()`, `wifi_service_command()`): chỉ đưa vào hàng
+  đợi hoặc state, không chặn. Logic chờ `.../state` và hết hạn 3 s nằm trong `home_service`, không ở UI.
+- Mỗi service: một cặp `.h/.cpp`, `xxx_init()` + `xxx_task()` (nếu chạy nền), chi tiết nội bộ để `static`.
+- Bản sao ~7 KB (`HomeConfig`/`HomeState`) cấp trong PSRAM bằng `state_alloc_large()` để chừa RAM nội cho TLS.
 - Việc mạng chạy trong task FreeRTOS riêng, không chặn giao diện.
-- Không hard-code Wi-Fi hay mật khẩu; dùng `include/secrets.h`.
+- Không hard-code Wi-Fi hay mật khẩu; đọc qua `core/config.h` (lấy từ `include/secrets.h`).
 - Sau khi sửa code phải chạy `pio run` và đảm bảo build thành công; sửa parser thì chạy `pio test -e native`.
 - Giữ thay đổi nhỏ, đúng phạm vi yêu cầu; không refactor ngoài yêu cầu.
 - Không commit thay đổi `.vscode/extensions.json` do extension PlatformIO tự sửa.

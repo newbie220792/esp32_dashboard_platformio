@@ -100,7 +100,7 @@ Trái: chấm 8px + nhãn (`Pi 5 MQTT`, `Ho Chi Minh`, `Home MQTT`). Giữa: 3 c
 2. Cập nhật `platformio.ini` theo mục 2; thay LovyanGFX/TFT_eSPI bằng GFX Library for Arduino, thêm thư viện GT911.
 3. Viết lớp hiển thị (display driver) và nối cảm ứng vào LVGL (flush callback, read callback) cho 480x272.
 4. Cập nhật `lv_conf.h` theo mục 3; đặt draw buffer vào PSRAM.
-5. Chỉnh toàn bộ UI (`ui_monitor.*`, `ui_weather.*`, `ui_home.*`, `ui_wifi.*`) theo kích thước ở mục 4.
+5. Chỉnh toàn bộ UI (`ui/screens/screen_monitor.*`, `ui/screens/screen_weather.*`, `ui/screens/screen_home.*`, `ui/screens/screen_wifi.*`) theo kích thước ở mục 4.
 6. Kiểm tra dung lượng flash sau khi build; nếu vượt thì giảm font, tắt module LVGL không dùng, chọn lại partition.
 
 ## 6. Lưu ý đã biết với board này

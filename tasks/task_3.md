@@ -48,12 +48,12 @@ Cần thêm một trạng thái "Connecting…" ngắn (spinner `lv_spinner` kè
 ## 3. Việc cần làm
 
 1. Thêm thư viện `tzapu/WiFiManager` vào `platformio.ini`.
-2. Tạo module `wifi_setup.*` quản lý trạng thái: `CONNECTING`, `FAILED_SAVED`, `PORTAL`, `CONNECTING_NEW`, `FAILED_NEW`, `CONNECTED`.
+2. Tạo module `services/wifi_service.*` quản lý trạng thái: `CONNECTING`, `FAILED_SAVED`, `PORTAL`, `CONNECTING_NEW`, `FAILED_NEW`, `CONNECTED`.
 3. Thử `secrets.h` bằng `WiFi.begin()` với timeout 15–20 giây, đọc `WiFi.status()` để biết lý do lỗi.
 4. Chế độ cấu hình: dùng `WiFiManager` ở chế độ không chặn (`setConfigPortalBlocking(false)`) và `startConfigPortal("ESP32-Setup")`, để vòng lặp LVGL vẫn chạy và cập nhật màn hình.
 5. Dùng `setSaveConfigCallback` / theo dõi `WiFi.status()` để biết khi nào người dùng gửi thông tin và đang thử kết nối, từ đó chuyển trạng thái và tăng số lần thử.
 6. Khi thất bại ở bước 5 phải mở lại portal (hoặc giữ portal chạy) để nhập lại, không thoát khỏi chế độ cấu hình.
-7. Dựng 3 màn hình mới `ui_wifi_fail.*`, `ui_wifi_setup.*`, `ui_wifi_retry.*` (hoặc một file `ui_wifi.*` có 3 chế độ). Hiển thị chúng trên một màn riêng, ẩn tileview chính cho đến khi kết nối thành công.
+7. Dựng 3 màn hình mới `ui_wifi_fail.*`, `ui_wifi_setup.*`, `ui_wifi_retry.*` (hoặc một file `ui/screens/screen_wifi.*` có 3 chế độ). Hiển thị chúng trên một màn riêng, ẩn tileview chính cho đến khi kết nối thành công.
 8. Chỉ gọi LVGL từ task LVGL; sự kiện Wi-Fi gửi qua hàng đợi (queue) cho task giao diện.
 9. Cập nhật `CLAUDE.md`: thêm mục Wi-Fi và luồng ở trên.
 

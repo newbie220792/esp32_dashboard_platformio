@@ -27,7 +27,7 @@ Màn 1 chỉ còn: thanh trạng thái phía trên và hàng 3 đồng hồ **CP
 
 ## Việc cần làm
 
-1. Tìm trong code UI màn 1 (ví dụ `ui_monitor.*`) đoạn tạo thẻ biểu đồ CPU và xóa nó.
+1. Tìm trong code UI màn 1 (ví dụ `ui/screens/screen_monitor.*`) đoạn tạo thẻ biểu đồ CPU và xóa nó.
 2. Xóa code liên quan: `lv_chart`, series, buffer lịch sử CPU, label `CPU · 60s`, label `avg`, và đoạn cập nhật chúng trong callback nhận MQTT.
 3. Nếu `lv_conf.h` bật `LV_USE_CHART` chỉ vì màn này, tắt đi để giảm kích thước firmware (kiểm tra màn 2 không dùng).
 4. Chỉnh layout: hàng 3 thẻ đồng hồ co giãn để lấp đầy chiều cao còn lại; tăng kích thước cung theo mô tả trên.

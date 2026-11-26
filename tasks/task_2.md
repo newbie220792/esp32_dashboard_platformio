@@ -157,7 +157,7 @@ Topic cấu hình `home/config` (retain):
 1. Cập nhật `lv_tileview`: thêm tile thứ 3, đổi chỉ trang thành 3 chấm trên cả 3 màn.
 2. Màn 1: bỏ khung biểu đồ, thu nhỏ đồng hồ, thêm danh sách service và parse `pi5/services`.
 3. Màn 3: dựng panel phòng, panel cụm, công tắc; đổi phòng bằng `‹` `›`; parse `home/config`; nhận `.../state`; gửi `.../set`.
-4. Tách file: `ui_monitor.*`, `ui_weather.*`, `ui_home.*`, `mqtt.*` (nhận chung và phân phối theo topic).
+4. Tách file: `ui/screens/screen_monitor.*`, `ui/screens/screen_weather.*`, `ui/screens/screen_home.*`, `mqtt.*` (nhận chung và phân phối theo topic).
 5. Viết script Python cho Pi 5 (psutil + paho-mqtt) publish `pi5/stats` và `pi5/services` (lấy danh sách service bằng `systemctl` và `ss -ltnp`). Nếu bạn đã có script thì chỉ cần sửa theo format trên.
 6. Cập nhật `CLAUDE.md`: cấu trúc thư mục, danh sách topic, quy ước giao diện của màn 3.
 

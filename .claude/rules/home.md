@@ -1,7 +1,8 @@
 ---
 paths:
-  - "src/ui_home.*"
-  - "src/mqtt.*"
+  - "src/ui/screens/screen_home.*"
+  - "src/ui/components/switch_tile.*"
+  - "src/services/home_service.*"
   - "tools/home_sim.py"
 ---
 
@@ -15,6 +16,6 @@ paths:
 - Mỗi cụm luôn có đúng 3 ô: thiếu thì để ô trống, thừa thì bỏ.
 - Công tắc (bo 10, khoảng 140x58, icon 22px, tên font 14, trạng thái font 12): ON nền `#F5A524`, chữ và icon `#0B0F14`. OFF nền `#2A3646`, tên `#E6EDF3`, trạng thái
   và icon `#A3AEBB`. Icon theo trường `icon`: `bulb`, `fan`, `plug`, `snow` (hoặc `ac`).
-- Chạm: gửi trạng thái ngược lại lên `.../set` và làm mờ ô 40% kèm chữ `...`. **Chỉ đổi màu khi
+- Chạm: `home_service_set()` gửi trạng thái ngược lại lên `.../set` và đánh dấu pending (ô mờ 40% kèm chữ `...`). **Chỉ đổi màu khi
   nhận `.../state`.** Sau `SWITCH_PENDING_MS` (3 giây) không có phản hồi thì trả về trạng thái cũ.
 - Mất MQTT: ô mờ 50%, bỏ qua thao tác chạm, xóa các lệnh đang chờ.
