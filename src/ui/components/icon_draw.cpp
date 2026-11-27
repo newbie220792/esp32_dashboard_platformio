@@ -45,6 +45,34 @@ void icon_rrect(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2
     lv_draw_rect(c.layer, &d, &a);
 }
 
+void icon_triangle(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3,
+                   lv_color_t col) {
+    lv_draw_triangle_dsc_t d;
+    lv_draw_triangle_dsc_init(&d);
+    d.bg_color = col;
+    d.bg_opa = LV_OPA_COVER;
+    d.p[0].x = X(c, x1);
+    d.p[0].y = Y(c, y1);
+    d.p[1].x = X(c, x2);
+    d.p[1].y = Y(c, y2);
+    d.p[2].x = X(c, x3);
+    d.p[2].y = Y(c, y3);
+    lv_draw_triangle(c.layer, &d);
+}
+
+void icon_rrect_outline(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t radius,
+                        int32_t w, lv_color_t col) {
+    lv_draw_rect_dsc_t d;
+    lv_draw_rect_dsc_init(&d);
+    d.bg_opa = LV_OPA_TRANSP;
+    d.border_color = col;
+    d.border_opa = LV_OPA_COVER;
+    d.border_width = LV_MAX(1, w * c.s / 100);
+    d.radius = radius * c.s / 100;
+    lv_area_t a = {X(c, x1), Y(c, y1), X(c, x2), Y(c, y2)};
+    lv_draw_rect(c.layer, &d, &a);
+}
+
 void icon_line(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t w, lv_color_t col) {
     lv_draw_line_dsc_t d;
     lv_draw_line_dsc_init(&d);

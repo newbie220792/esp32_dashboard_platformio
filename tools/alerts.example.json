@@ -1,0 +1,15 @@
+{
+  "city": "TP Dong Nai",
+  "lat": 10.9574,
+  "lon": 106.8427,
+  "temp_critical": 70,
+  "ram_warning": 90,
+  "services": {
+    "mosquitto": "critical",
+    "nginx": "warning",
+    "docker": "warning",
+    "node-red": "warning"
+  },
+  "mqtt_host": "localhost",
+  "mqtt_port": 1883
+}

@@ -14,6 +14,11 @@ void icon_circle(const IconCtx &c, int32_t cx, int32_t cy, int32_t r, lv_color_t
 void icon_rrect(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t radius,
                 lv_color_t col);
 void icon_line(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t w, lv_color_t col);
+void icon_triangle(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3,
+                   lv_color_t col);
+// Hollow rounded rectangle (border only), `w` = border width in units.
+void icon_rrect_outline(const IconCtx &c, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t radius,
+                        int32_t w, lv_color_t col);
 // Arc around (cx, cy); angles in degrees, LVGL convention (0 = 3 o'clock, clockwise).
 void icon_arc(const IconCtx &c, int32_t cx, int32_t cy, int32_t r, int32_t w, int32_t start, int32_t end,
               lv_color_t col);

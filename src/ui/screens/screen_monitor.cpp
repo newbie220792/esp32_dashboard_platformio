@@ -1,5 +1,6 @@
 #include "ui/screens/screen_monitor.h"
 
+#include <math.h>
 #include <stdio.h>
 
 #include "app_config.h"
@@ -24,8 +25,9 @@ static Gauge g_cpu, g_ram, g_temp;
 static lv_obj_t *s_svc_list;
 static lv_obj_t *s_svc_empty;
 static ServiceRow s_rows[MAX_SERVICES];
-static uint32_t s_stats_ver = UINT32_MAX, s_services_ver = UINT32_MAX;
+static uint32_t s_stats_ver = UINT32_MAX, s_services_ver = UINT32_MAX, s_settings_ver = UINT32_MAX;
 static Pi5StatsState s_pi5;   // last copy drawn
+static TempUnit s_unit = TempUnit::C;   // TEMP label only; arc + hot threshold stay deg C
 
 // Gray out the values when pi5/stats has gone quiet.
 static void stale_timer_cb(lv_timer_t *) {
@@ -153,7 +155,7 @@ static void stats_draw(const PiStats &s) {
     if (s.ram_total > 0)
         lv_label_set_text_fmt(g_ram.caption, "RAM %.1f/%gG", s.ram_used, s.ram_total);
 
-    snprintf(buf, sizeof buf, "%d\xC2\xB0", (int)(s.temp + 0.5f));   // degree sign
+    snprintf(buf, sizeof buf, "%d\xC2\xB0", (int)lroundf(temp_in_unit(s.temp, s_unit)));   // degree sign
     gauge_set(g_temp, (int32_t)(s.temp + 0.5f), buf);
     lv_obj_set_style_arc_color(g_temp.arc, s.temp > TEMP_HOT_C ? COL_HOT : COL_TEMP, LV_PART_INDICATOR);
 }
@@ -180,6 +182,11 @@ static void services_draw(const ServiceList &list) {
 }
 
 void screen_monitor_poll() {
+    if (state_version(StateGroup::Settings) != s_settings_ver) {
+        s_settings_ver = state_version(StateGroup::Settings);
+        s_unit = state_get_settings().unit;
+        s_stats_ver = UINT32_MAX;   // redraw the TEMP label in the new unit
+    }
     if (state_version(StateGroup::Pi5Stats) != s_stats_ver) {
         s_stats_ver = state_version(StateGroup::Pi5Stats);
         state_get_pi5_stats(s_pi5);

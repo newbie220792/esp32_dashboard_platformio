@@ -4,6 +4,7 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_heap_caps.h>
 #include <freertos/semphr.h>
+#include <string.h>
 
 #include "core/events.h"
 
@@ -16,6 +17,9 @@ static Pi5StatsState s_pi5;
 static ServiceList s_services;
 static WeatherState s_weather;
 static HomeState *s_home_p;   // PSRAM, see state_init()
+static Settings s_settings;
+static LocationState s_location;
+static AlertsState s_alerts;
 
 namespace {
 struct Lock {
@@ -168,4 +172,109 @@ void state_update_home(bool (*fn)(HomeState &st, void *ctx), void *ctx) {
         if (changed) bump(StateGroup::Home);
     }
     if (changed) notify(StateGroup::Home);
+}
+
+// ---------------- settings ----------------
+
+Settings state_get_settings() {
+    Lock l;
+    return s_settings;
+}
+
+void state_set_settings(const Settings &s) {
+    bool changed;
+    {
+        Lock l;
+        changed = s_settings.brightness != s.brightness || s_settings.sleep_s != s.sleep_s ||
+                  s_settings.unit != s.unit;
+        s_settings = s;
+        if (changed) bump(StateGroup::Settings);
+    }
+    if (changed) notify(StateGroup::Settings);
+}
+
+// ---------------- location ----------------
+
+LocationState state_get_location() {
+    Lock l;
+    return s_location;
+}
+
+void state_set_location(const Location &loc, bool from_api) {
+    bool changed;
+    {
+        Lock l;
+        changed = strcmp(s_location.loc.city, loc.city) || s_location.loc.lat != loc.lat ||
+                  s_location.loc.lon != loc.lon || s_location.from_api != from_api;
+        s_location.loc = loc;
+        s_location.from_api = from_api;
+        if (changed) bump(StateGroup::Location);
+    }
+    if (changed) notify(StateGroup::Location);
+}
+
+// ---------------- alerts ----------------
+
+void state_get_alerts(AlertsState &out) {
+    Lock l;
+    out = s_alerts;
+}
+
+void state_set_alerts_summary(const AlertSummary &s) {
+    bool changed;
+    {
+        Lock l;
+        changed = !s_alerts.have_summary || s_alerts.summary.unacked != s.unacked ||
+                  s_alerts.summary.critical != s.critical || s_alerts.summary.latest_id != s.latest_id;
+        s_alerts.summary = s;
+        s_alerts.have_summary = true;
+        if (changed) bump(StateGroup::Alerts);
+    }
+    if (changed) notify(StateGroup::Alerts);
+}
+
+void state_set_alerts_op(AlertsOp op) {
+    {
+        Lock l;
+        s_alerts.op = op;
+        bump(StateGroup::Alerts);
+    }
+    notify(StateGroup::Alerts);
+}
+
+void state_set_alerts_list(const AlertList &list) {
+    {
+        Lock l;
+        s_alerts.list = list;
+        s_alerts.have_list = true;
+        s_alerts.op = AlertsOp::Idle;
+        s_alerts.err = AlertsErr::None;
+        bump(StateGroup::Alerts);
+    }
+    notify(StateGroup::Alerts);
+}
+
+void state_set_alerts_error(AlertsErr err) {
+    {
+        Lock l;
+        s_alerts.op = AlertsOp::Idle;
+        s_alerts.err = err;
+        bump(StateGroup::Alerts);
+    }
+    notify(StateGroup::Alerts);
+}
+
+void state_alerts_cleared() {
+    {
+        Lock l;
+        s_alerts.list.count = 0;
+        s_alerts.have_list = true;
+        s_alerts.summary.unacked = 0;
+        s_alerts.summary.critical = 0;
+        s_alerts.have_summary = true;
+        s_alerts.op = AlertsOp::Idle;
+        s_alerts.err = AlertsErr::None;
+        bump(StateGroup::Alerts);
+    }
+    notify(StateGroup::Alerts);
 }

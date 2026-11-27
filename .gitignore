@@ -13,3 +13,4 @@ include/secrets.h
 __pycache__/
 
 .claude/settings.local.json
+.vscode/

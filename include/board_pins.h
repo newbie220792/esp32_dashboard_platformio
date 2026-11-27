@@ -11,7 +11,7 @@
 #define TFT_PIN_D1     48
 #define TFT_PIN_D2     40
 #define TFT_PIN_D3     39
-#define TFT_PIN_BL     1      // backlight, driven fully on (no dimming)
+#define TFT_PIN_BL     1      // backlight, LEDC PWM (hal/backlight.cpp)
 #define TFT_ROTATION   0      // 0 or 2 (180 deg); the NV3041A cannot do 90/270
 #define TFT_IPS        true   // IPS panel: colour inversion on
 

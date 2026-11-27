@@ -14,7 +14,7 @@
 
 #include "core/models.h"
 
-enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Count };
+enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Settings, Location, Alerts, Count };
 
 struct NetState {
     bool     wifi_connected;   // STA associated *and* has an IP
@@ -40,6 +40,25 @@ struct WeatherState {
 struct HomeState {
     bool       have_config;    // home/config received at least once
     HomeConfig cfg;            // switches carry on/pending, owned by home_service
+};
+
+struct LocationState {
+    bool     from_api;         // false = NVS copy or the built-in default
+    Location loc;
+};
+
+enum class AlertsOp : uint8_t { Idle, Loading, Clearing };
+enum class AlertsErr : uint8_t { None, LoadFailed, ClearFailed };
+
+struct AlertsState {
+    // badge (GET /api/alerts/summary); kept as-is while offline
+    bool         have_summary;
+    AlertSummary summary;
+    // list (GET /api/alerts), fetched while the Alerts screen is open
+    bool         have_list;    // at least one good fetch
+    AlertList    list;
+    AlertsOp     op;           // request in flight
+    AlertsErr    err;          // last list request outcome
 };
 
 void state_init();
@@ -74,3 +93,19 @@ void state_get_home(HomeState &out);
 // Runs `fn(cfg, ctx)` under the lock and bumps the version if it returns true.
 // Lets home_service edit switches in place without copying 7 KB twice.
 void state_update_home(bool (*fn)(HomeState &st, void *ctx), void *ctx);
+
+// ---- settings (settings_service) ----
+Settings state_get_settings();
+void state_set_settings(const Settings &s);
+
+// ---- location (location_service) ----
+LocationState state_get_location();
+void state_set_location(const Location &loc, bool from_api);   // bumps only on change
+
+// ---- alerts (alerts_service) ----
+void state_get_alerts(AlertsState &out);
+void state_set_alerts_summary(const AlertSummary &s);           // bumps only on change
+void state_set_alerts_op(AlertsOp op);
+void state_set_alerts_list(const AlertList &list);              // op Idle, err None
+void state_set_alerts_error(AlertsErr err);                     // op Idle, list kept
+void state_alerts_cleared();                                    // empty list, unacked 0

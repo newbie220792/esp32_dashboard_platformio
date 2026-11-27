@@ -197,8 +197,119 @@ static void test_wifi_qr() {
     TEST_ASSERT_FALSE(build_wifi_qr(small, sizeof small, "ESP32-Setup", "secret123"));
 }
 
+// ---------------- Pi 5 REST API (task 8) ----------------
+static void test_ascii_sanitize() {
+    char b[32];
+    ascii_sanitize(b, sizeof b, "TP Dong Nai");
+    TEST_ASSERT_EQUAL_STRING("TP Dong Nai", b);
+    ascii_sanitize(b, sizeof b, "TP \xC4\x90\xE1\xBB\x93ng Nai");   // "TP Đồng Nai"
+    TEST_ASSERT_EQUAL_STRING("TP ??ng Nai", b);
+    ascii_sanitize(b, sizeof b, "74\xC2\xB0" "C \xC2\xB7 limit");   // degree kept, middle dot -> bullet
+    TEST_ASSERT_EQUAL_STRING("74\xC2\xB0" "C \xE2\x80\xA2 limit", b);
+    ascii_sanitize(b, sizeof b, "a\tb\x01");
+    TEST_ASSERT_EQUAL_STRING("a b ", b);
+    ascii_sanitize(b, 4, "abcdef");
+    TEST_ASSERT_EQUAL_STRING("abc", b);
+    ascii_sanitize(b, 5, "ab\xC2\xB0\xC2\xB0");   // never splits a character
+    TEST_ASSERT_EQUAL_STRING("ab\xC2\xB0", b);
+    ascii_sanitize(b, sizeof b, "x\xE2\x80");     // truncated sequence at the end
+    TEST_ASSERT_EQUAL_STRING("x?", b);
+    ascii_sanitize(b, sizeof b, nullptr);
+    TEST_ASSERT_EQUAL_STRING("", b);
+}
+
+static void test_alerts_summary() {
+    AlertSummary s{};
+    const char *j = R"({"unacked":3,"critical":1,"latest_id":128})";
+    TEST_ASSERT_TRUE(parse_alerts_summary(j, strlen(j), s));
+    TEST_ASSERT_EQUAL(3, s.unacked);
+    TEST_ASSERT_EQUAL(1, s.critical);
+    TEST_ASSERT_EQUAL(128, s.latest_id);
+    TEST_ASSERT_FALSE(parse_alerts_summary(R"({"error":"bad token"})", 21, s));
+    TEST_ASSERT_EQUAL(3, s.unacked);   // untouched
+}
+
+static void test_alerts_spec_example() {
+    const char *j = R"({"items":[
+        {"id":128,"level":"critical","title":"Pi 5 temperature high","detail":"74°C · limit 70°C","ts":1764000000,"count":3,"ack":false},
+        {"id":127,"level":"warning","title":"node-red stopped","detail":"Port 1880","ts":1763999400,"count":1,"ack":false},
+        {"id":126,"level":"rain","title":"odd level","ts":1}]})";
+    AlertList l{};
+    TEST_ASSERT_TRUE(parse_alerts(j, strlen(j), l));
+    TEST_ASSERT_EQUAL(3, l.count);
+    TEST_ASSERT_EQUAL(128, l.items[0].id);
+    TEST_ASSERT_TRUE(l.items[0].level == AlertLevel::Critical);
+    TEST_ASSERT_EQUAL_STRING("Pi 5 temperature high", l.items[0].title);
+    TEST_ASSERT_EQUAL_STRING("74\xC2\xB0" "C \xE2\x80\xA2 limit 70\xC2\xB0" "C", l.items[0].detail);
+    TEST_ASSERT_EQUAL(3, l.items[0].count);
+    TEST_ASSERT_EQUAL_UINT32(1764000000u, l.items[0].ts);
+    TEST_ASSERT_TRUE(l.items[1].level == AlertLevel::Warning);
+    TEST_ASSERT_TRUE(l.items[2].level == AlertLevel::Info);   // unknown level
+    TEST_ASSERT_EQUAL_STRING("", l.items[2].detail);
+    TEST_ASSERT_EQUAL(1, l.items[2].count);
+}
+
+static void test_alerts_capped_and_bad_json() {
+    char buf[2048] = "{\"items\":[";
+    for (int i = 0; i < 14; i++) {
+        char item[96];
+        snprintf(item, sizeof item, "%s{\"id\":%d,\"level\":\"info\",\"title\":\"t%d\",\"ts\":1}", i ? "," : "", 100 - i, i);
+        strcat(buf, item);
+    }
+    strcat(buf, "]}");
+    AlertList l{};
+    TEST_ASSERT_TRUE(parse_alerts(buf, strlen(buf), l));
+    TEST_ASSERT_EQUAL(ALERTS_MAX, l.count);
+    TEST_ASSERT_EQUAL(100, l.items[0].id);
+
+    TEST_ASSERT_FALSE(parse_alerts(R"({"items":[{"id":1)", 17, l));
+    TEST_ASSERT_FALSE(parse_alerts(R"({"error":"x"})", 13, l));
+    TEST_ASSERT_EQUAL(ALERTS_MAX, l.count);   // untouched
+
+    const char *skip = R"({"items":[{"title":"no id"},{"id":5,"title":""},{"id":6,"title":"ok"}]})";
+    TEST_ASSERT_TRUE(parse_alerts(skip, strlen(skip), l));
+    TEST_ASSERT_EQUAL(1, l.count);
+    TEST_ASSERT_EQUAL(6, l.items[0].id);
+}
+
+static void test_location() {
+    Location loc{};
+    const char *j = R"({"city":"TP Đồng Nai","lat":10.9574,"lon":106.8427})";
+    TEST_ASSERT_TRUE(parse_location(j, strlen(j), loc));
+    TEST_ASSERT_EQUAL_STRING("TP ??ng Nai", loc.city);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 10.9574f, loc.lat);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 106.8427f, loc.lon);
+    const char *bad[] = {R"({"city":"","lat":1,"lon":2})", R"({"city":"X","lat":1})",
+                         R"({"city":"X","lat":91,"lon":2})", R"({"city":"X","lat":"1","lon":2})", "{"};
+    for (const char *b : bad) TEST_ASSERT_FALSE(parse_location(b, strlen(b), loc));
+    TEST_ASSERT_EQUAL_STRING("TP ??ng Nai", loc.city);   // untouched
+}
+
+static void test_format_age() {
+    char b[16];
+    const uint32_t now = 1764000000u;
+    format_age(b, sizeof b, now - 10, now);
+    TEST_ASSERT_EQUAL_STRING("now", b);
+    format_age(b, sizeof b, now - 120, now);
+    TEST_ASSERT_EQUAL_STRING("2 min", b);
+    format_age(b, sizeof b, now - 3 * 3600, now);
+    TEST_ASSERT_EQUAL_STRING("3 h", b);
+    format_age(b, sizeof b, now - 2 * 86400, now);
+    TEST_ASSERT_EQUAL_STRING("2 d", b);
+    format_age(b, sizeof b, now - 10, 1000);   // clock not synced
+    TEST_ASSERT_EQUAL_STRING("", b);
+    format_age(b, sizeof b, now + 600, now);   // from the future
+    TEST_ASSERT_EQUAL_STRING("", b);
+}
+
 int main() {
     UNITY_BEGIN();
+    RUN_TEST(test_ascii_sanitize);
+    RUN_TEST(test_alerts_summary);
+    RUN_TEST(test_alerts_spec_example);
+    RUN_TEST(test_alerts_capped_and_bad_json);
+    RUN_TEST(test_location);
+    RUN_TEST(test_format_age);
     RUN_TEST(test_pi_stats);
     RUN_TEST(test_services_spec_example);
     RUN_TEST(test_services_unknown_status_is_stopped);

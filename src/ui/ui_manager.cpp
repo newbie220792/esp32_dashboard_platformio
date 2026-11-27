@@ -1,33 +1,44 @@
 #include "ui/ui_manager.h"
 
 #include <Arduino.h>
+#include <string.h>
 
 #include "app_config.h"
 #include "core/events.h"
 #include "core/state.h"
+#include "services/settings_service.h"
 #include "ui/components/status_bar.h"
+#include "ui/screens/screen_alerts.h"
 #include "ui/screens/screen_home.h"
 #include "ui/screens/screen_monitor.h"
+#include "ui/screens/screen_settings.h"
 #include "ui/screens/screen_weather.h"
 #include "ui/screens/screen_wifi.h"
 #include "ui/theme.h"
 
-#define POLL_MS 250   // state-store poll; events make most updates immediate
+#define POLL_MS         250   // state-store poll; events make most updates immediate
+#define SCREEN_POWER_MS 500   // screen-off check
 
 static bool mqtt_dot() { return state_get_net().mqtt_connected; }
 
+// Weather tab title = the Pi 5's city (location_service), refreshed on poll.
+static char s_city[CITY_LEN];
+static const char *city_title() { return s_city; }
+static const char *monitor_title() { return "Pi 5 MQTT"; }
+static const char *home_title() { return "Home MQTT"; }
+
 // The tiles, left to right. A new tab = one screen_* module + one row here.
 struct Tile {
-    const char *title;
+    const char *(*title)();
     void (*create)(lv_obj_t *tile);
     void (*poll)();
     bool (*dot_ok)();   // status-bar dot for this tile
 };
 
 static const Tile kTiles[] = {
-    {"Pi 5 MQTT", screen_monitor_create, screen_monitor_poll, mqtt_dot},
-    {WEATHER_LOCATION, screen_weather_create, screen_weather_poll, screen_weather_ok},
-    {"Home MQTT", screen_home_create, screen_home_poll, mqtt_dot},
+    {monitor_title, screen_monitor_create, screen_monitor_poll, mqtt_dot},
+    {city_title, screen_weather_create, screen_weather_poll, screen_weather_ok},
+    {home_title, screen_home_create, screen_home_poll, mqtt_dot},
 };
 static constexpr int TILE_COUNT = sizeof kTiles / sizeof kTiles[0];
 enum { TILE_MONITOR = 0 };
@@ -35,7 +46,9 @@ enum { TILE_MONITOR = 0 };
 static lv_obj_t *s_tv;
 static lv_obj_t *s_tiles[TILE_COUNT];
 static lv_timer_t *s_rotate_timer;
-static lv_obj_t *s_main_scr, *s_wifi_scr;
+static lv_obj_t *s_main_scr, *s_wifi_scr, *s_alerts_scr, *s_settings_scr;
+static int s_return_tile = 0;   // tile to go back to from Alerts / Settings
+static uint32_t s_loc_ver = UINT32_MAX, s_alerts_ver = UINT32_MAX;
 
 static uint32_t s_net_ver = UINT32_MAX, s_setup_ver = UINT32_MAX;
 static bool s_wifi_ok = false;
@@ -55,10 +68,41 @@ static int active_tile() {
 static void refresh_status() {
     const int t = active_tile();
     status_bar_set_page(t);
-    status_bar_set_title(kTiles[t].title);
+    status_bar_set_title(kTiles[t].title());
     status_bar_set_dot(kTiles[t].dot_ok());
     status_bar_set_wifi(s_wifi_ok);
 }
+
+// ---------------- Alerts / Settings overlays ----------------
+// Own lv_screens, outside the swipe strip. Back returns to the tile left.
+
+static bool overlay_active() {
+    lv_obj_t *a = lv_screen_active();
+    return a == s_alerts_scr || a == s_settings_scr;
+}
+
+static void leave_overlay() {
+    if (lv_screen_active() == s_alerts_scr) screen_alerts_close();
+}
+
+static void overlay_open(lv_obj_t *scr) {
+    if (lv_screen_active() == scr) return;
+    if (!overlay_active()) s_return_tile = active_tile();
+    leave_overlay();
+    if (scr == s_alerts_scr) screen_alerts_open();
+    else screen_settings_poll();
+    lv_screen_load(scr);
+}
+
+static void overlay_back() {
+    leave_overlay();
+    lv_tileview_set_tile_by_index(s_tv, s_return_tile, 0, LV_ANIM_OFF);
+    refresh_status();
+    lv_screen_load(s_main_scr);
+}
+
+static void open_alerts() { overlay_open(s_alerts_scr); }
+static void open_settings() { overlay_open(s_settings_scr); }
 
 // ---------------- Wi-Fi setup screens ----------------
 
@@ -71,15 +115,75 @@ static void wifi_back() {
 
 static void wifi_reopen() {
     s_wifi_dismissed = false;
-    if (!s_wifi_setup_done) lv_screen_load(s_wifi_scr);
+    if (s_wifi_setup_done) return;
+    leave_overlay();
+    lv_screen_load(s_wifi_scr);
 }
 
 static void wifi_setup_apply(const WifiSetupInfo &info) {
     screen_wifi_apply(info);
     s_wifi_setup_done = info.state == WifiSetupState::Connected;
     if (s_wifi_setup_done) s_wifi_dismissed = false;
-    lv_obj_t *want = (s_wifi_setup_done || s_wifi_dismissed) ? s_main_scr : s_wifi_scr;
-    if (lv_screen_active() != want) lv_screen_load(want);
+    const bool want_main = s_wifi_setup_done || s_wifi_dismissed;
+    if (want_main && overlay_active()) return;   // Alerts / Settings count as the main UI
+    lv_obj_t *want = want_main ? s_main_scr : s_wifi_scr;
+    if (lv_screen_active() != want) {
+        if (!want_main) leave_overlay();
+        lv_screen_load(want);
+    }
+}
+
+// ---------------- screen off (Settings) ----------------
+// LVGL's inactivity time drives the backlight: dim SCREEN_DIM_LEAD_MS before
+// the delay, then off. While dimmed/off a transparent shield on the top layer
+// eats the first touch, so waking never presses the button under the finger.
+
+static lv_obj_t *s_shield;
+static ScreenPower s_power = ScreenPower::On;
+
+static void shield_cb(lv_event_t *e) {
+    const lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        lv_obj_delete_async(s_shield);   // the press that woke us is over
+        s_shield = nullptr;
+    }
+}
+
+static void shield_up() {
+    if (s_shield) return;
+    s_shield = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(s_shield);
+    lv_obj_set_size(s_shield, LV_PCT(100), LV_PCT(100));
+    lv_obj_add_flag(s_shield, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(s_shield, shield_cb, LV_EVENT_ALL, nullptr);
+}
+
+static void power_set(ScreenPower p) {
+    if (p == s_power) return;
+    s_power = p;
+    settings_service_set_power(p);
+    if (p != ScreenPower::On) shield_up();
+}
+
+static void power_timer_cb(lv_timer_t *) {
+    const uint32_t sleep_ms = state_get_settings().sleep_s * 1000UL;
+    const uint32_t idle = lv_display_get_inactive_time(nullptr);
+    ScreenPower p = ScreenPower::On;
+    if (sleep_ms && idle >= sleep_ms) p = ScreenPower::Off;
+    else if (sleep_ms && idle + SCREEN_DIM_LEAD_MS >= sleep_ms) p = ScreenPower::Dim;
+    power_set(p);   // a touch resets `idle`, so the light comes back on press
+}
+
+// BOOT short press: wake only (no tile change) when the screen is dim/off.
+static bool wake_by_button() {
+    if (s_power == ScreenPower::On) return false;
+    lv_display_trigger_activity(nullptr);
+    power_set(ScreenPower::On);
+    if (s_shield) {   // no finger on the glass: drop the shield now
+        lv_obj_delete(s_shield);
+        s_shield = nullptr;
+    }
+    return true;
 }
 
 // ---------------- state polling ----------------
@@ -100,7 +204,21 @@ static void poll_all() {
         }
         s_wifi_ok = ns.wifi_connected;
     }
+    if (state_version(StateGroup::Location) != s_loc_ver) {
+        s_loc_ver = state_version(StateGroup::Location);
+        const LocationState ls = state_get_location();
+        memcpy(s_city, ls.loc.city, sizeof s_city);
+        s_city[sizeof s_city - 1] = '\0';
+    }
+    if (state_version(StateGroup::Alerts) != s_alerts_ver) {
+        s_alerts_ver = state_version(StateGroup::Alerts);
+        static AlertsState st;   // LVGL task only (~1.4 KB, off the stack)
+        state_get_alerts(st);
+        status_bar_set_alerts(st.have_summary && st.summary.unacked > 0);   // offline: last value stays
+    }
     for (const Tile &t : kTiles) t.poll();
+    screen_alerts_poll();
+    screen_settings_poll();
     refresh_status();   // cheap: LVGL only redraws properties that changed
 }
 
@@ -109,6 +227,7 @@ static void poll_timer_cb(lv_timer_t *) { poll_all(); }
 // ---------------- navigation ----------------
 
 static void next_tile() {
+    if (overlay_active()) return;   // Alerts / Settings sit outside the swipe strip
     int next = (active_tile() + 1) % TILE_COUNT;
     lv_tileview_set_tile_by_index(s_tv, next, 0, LV_ANIM_ON);
     refresh_status();   // set_tile updates the active tile immediately
@@ -149,7 +268,8 @@ void ui_init() {
         kTiles[i].create(s_tiles[i]);
     }
 
-    status_bar_create(scr, TILE_COUNT, wifi_reopen);   // created last so it draws above the tileview
+    // created last so it draws above the tileview
+    status_bar_create(scr, TILE_COUNT, StatusBarActions{wifi_reopen, open_alerts, open_settings});
 #if AUTO_ROTATE_MS > 0
     s_rotate_timer = lv_timer_create(rotate_timer_cb, AUTO_ROTATE_MS, nullptr);
 #endif
@@ -158,9 +278,12 @@ void ui_init() {
     // until the setup flow reports Connected.
     s_main_scr = scr;
     s_wifi_scr = screen_wifi_create(wifi_back);
+    s_alerts_scr = screen_alerts_create(overlay_back);
+    s_settings_scr = screen_settings_create(overlay_back);
     lv_screen_load(s_wifi_scr);
 
     lv_timer_create(poll_timer_cb, POLL_MS, nullptr);
+    lv_timer_create(power_timer_cb, SCREEN_POWER_MS, nullptr);
     poll_all();
 }
 
@@ -171,7 +294,9 @@ void ui_task(void *) {
         while (events_receive(ev, 0)) {
             switch (ev.type) {
             case EventType::StateChanged: dirty = true; break;
-            case EventType::NavNext:      next_tile(); break;
+            case EventType::NavNext:
+                if (!wake_by_button()) next_tile();
+                break;
             case EventType::WifiReopen:   wifi_reopen(); break;
             }
         }

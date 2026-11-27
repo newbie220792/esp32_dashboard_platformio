@@ -20,15 +20,28 @@
 // "current" lookup failed, and fetch() gave up without a word. useHTTP10(true)
 // gets a plain body (Connection: close) instead.
 
-static String build_url() {
+// Coordinates come from the Pi 5 (location_service, task 8).
+static String build_url(const Location &loc) {
     char url[400];
     snprintf(url, sizeof url,
              "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
              "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m"
              "&hourly=temperature_2m,weather_code,is_day,precipitation_probability"
              "&forecast_hours=6&wind_speed_unit=kmh&timeformat=unixtime&timezone=Asia%%2FHo_Chi_Minh",
-             (double)WEATHER_LAT, (double)WEATHER_LON);
+             (double)loc.lat, (double)loc.lon);
     return String(url);
+}
+
+// vTaskDelay that ends early when the location changes (reload the weather).
+static void wait_or_moved(uint32_t ms, uint32_t &loc_ver) {
+    const uint32_t start = millis();
+    while (millis() - start < ms) {
+        if (state_version(StateGroup::Location) != loc_ver) {
+            Serial.println("[weather] location changed, reloading");
+            return;
+        }
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
 }
 
 static WeatherErr http_error(int code) {
@@ -37,8 +50,8 @@ static WeatherErr http_error(int code) {
     return WeatherErr::ServerError;
 }
 
-static bool fetch(WeatherData &out, WeatherErr &err) {
-    const String url = build_url();
+static bool fetch(const Location &loc, WeatherData &out, WeatherErr &err) {
+    const String url = build_url(loc);
     Serial.printf("[weather] GET %s\n", url.c_str());
     Serial.printf("[weather] ip=%s dns=%s heap=%u internal_largest=%u\n", WiFi.localIP().toString().c_str(),
                   WiFi.dnsIP().toString().c_str(), (unsigned)ESP.getFreeHeap(),
@@ -138,22 +151,25 @@ void weather_service_task(void *) {
         // Certificate dates are checked: wait (up to 30 s) for NTP before the TLS handshake.
         for (int i = 0; i < 60 && !time_service_synced(); i++) vTaskDelay(pdMS_TO_TICKS(500));
 
+        uint32_t loc_ver = state_version(StateGroup::Location);
+        const Location loc = state_get_location().loc;
+
         static WeatherData data;   // weather task only
         WeatherErr err = WeatherErr::NoNetwork;
         bool ok = false;
         if (!time_service_synced()) Serial.println("[weather] clock not synced (NTP), TLS would fail");
-        else ok = fetch(data, err);
+        else ok = fetch(loc, data, err);
 
         if (ok) {
             state_set_weather(data);
-            Serial.printf("[weather] %.1fC code=%d rain=%d%%, %d hours\n", data.temp, data.code,
+            Serial.printf("[weather] %s: %.1fC code=%d rain=%d%%, %d hours\n", loc.city, data.temp, data.code,
                           data.rain_chance, data.hour_count);
             backoff_ms = WEATHER_RETRY_MS;
-            vTaskDelay(pdMS_TO_TICKS(WEATHER_REFRESH_MS));
+            wait_or_moved(WEATHER_REFRESH_MS, loc_ver);
         } else {
             post_error(err);
             Serial.printf("[weather] failed (err=%d), retry in %lus\n", (int)err, (unsigned long)(backoff_ms / 1000));
-            vTaskDelay(pdMS_TO_TICKS(backoff_ms));
+            wait_or_moved(backoff_ms, loc_ver);
             backoff_ms = min<uint32_t>(backoff_ms * 2, WEATHER_RETRY_MAX_MS);
         }
     }

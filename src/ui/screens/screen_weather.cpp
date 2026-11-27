@@ -15,7 +15,11 @@
 
 static lv_obj_t *s_icon, *s_temp, *s_unit, *s_cond, *s_feels, *s_hum, *s_wind, *s_rain, *s_stale;
 static uint32_t s_ver = 0;   // state version last drawn (0 = nothing yet)
+static uint32_t s_settings_ver = UINT32_MAX;
 static WeatherState s_w;     // last copy drawn
+static TempUnit s_unit_sel = TempUnit::C;   // Settings: labels only, data stays deg C
+
+static int temp_i(float c) { return (int)lroundf(temp_in_unit(c, s_unit_sel)); }
 
 struct HourCard {
     lv_obj_t *time, *icon, *temp;
@@ -128,16 +132,17 @@ void screen_weather_create(lv_obj_t *tile) {
 
 static void data_draw(const WeatherData &w) {
     weather_icon_set(s_icon, w.code, w.is_day);
-    lv_label_set_text_fmt(s_temp, "%d", (int)lroundf(w.temp));
+    lv_label_set_text_fmt(s_temp, "%d", temp_i(w.temp));
+    lv_label_set_text(s_unit, s_unit_sel == TempUnit::F ? DEG "F" : DEG "C");
     lv_label_set_text(s_cond, weather_code_text(w.code));
-    lv_label_set_text_fmt(s_feels, "Feels like %d" DEG, (int)lroundf(w.feels_like));
+    lv_label_set_text_fmt(s_feels, "Feels like %d" DEG, temp_i(w.feels_like));
     lv_label_set_text_fmt(s_hum, "%d%%", (int)lroundf(w.humidity));
     lv_label_set_text_fmt(s_wind, "%d km/h", (int)lroundf(w.wind_kmh));
     if (w.rain_chance >= 0) lv_label_set_text_fmt(s_rain, "%d%%", (int)w.rain_chance);
     else lv_label_set_text(s_rain, "--");
 
     weather_icon_set(s_hours[0].icon, w.code, w.is_day);
-    lv_label_set_text_fmt(s_hours[0].temp, "%d" DEG, (int)lroundf(w.temp));
+    lv_label_set_text_fmt(s_hours[0].temp, "%d" DEG, temp_i(w.temp));
 
     for (int i = 0; i < WEATHER_HOURS; i++) {
         HourCard &h = s_hours[i + 1];
@@ -145,7 +150,7 @@ static void data_draw(const WeatherData &w) {
             const WeatherHour &wh = w.hours[i];
             lv_label_set_text_fmt(h.time, "%02d:00", wh.hour);
             weather_icon_set(h.icon, wh.code, wh.is_day);
-            lv_label_set_text_fmt(h.temp, "%d" DEG, (int)lroundf(wh.temp));
+            lv_label_set_text_fmt(h.temp, "%d" DEG, temp_i(wh.temp));
         } else {
             lv_label_set_text(h.time, "--:--");
             lv_label_set_text(h.temp, "--" DEG);
@@ -155,7 +160,13 @@ static void data_draw(const WeatherData &w) {
 
 void screen_weather_poll() {
     const uint32_t v = state_version(StateGroup::Weather);
-    if (v == s_ver) return;
+    const uint32_t sv = state_version(StateGroup::Settings);
+    if (v == s_ver && sv == s_settings_ver) return;
+    if (sv != s_settings_ver) {
+        s_settings_ver = sv;
+        s_unit_sel = state_get_settings().unit;
+        lv_label_set_text(s_unit, s_unit_sel == TempUnit::F ? DEG "F" : DEG "C");
+    }
     s_ver = v;
     state_get_weather(s_w);
     if (s_w.have_data) {

@@ -100,6 +100,57 @@ struct WeatherData {
 // Why the last weather fetch failed (shown on the weather card).
 enum class WeatherErr : uint8_t { NoNetwork, Timeout, ServerError, BadData };
 
+// ---------------- settings (NVS, task 8) ----------------
+enum class TempUnit : uint8_t { C, F };
+
+#define BRIGHTNESS_MIN     10    // %, the screen never goes fully dark from the slider
+#define BRIGHTNESS_DEFAULT 70
+
+struct Settings {
+    uint8_t  brightness;   // BRIGHTNESS_MIN..100 %
+    uint16_t sleep_s;      // screen off after this much inactivity, 0 = never
+    TempUnit unit;
+};
+
+// Data always stays in deg C; only the labels convert.
+inline float temp_in_unit(float c, TempUnit u) { return u == TempUnit::F ? c * 9.0f / 5.0f + 32.0f : c; }
+
+// ---------------- Pi 5 location (GET /api/location) ----------------
+#define CITY_LEN 32
+
+struct Location {
+    char  city[CITY_LEN];   // ASCII only (see ascii_sanitize)
+    float lat;
+    float lon;
+};
+
+// ---------------- Pi 5 alerts (GET /api/alerts, /api/alerts/summary) ----------------
+#define ALERTS_MAX        10
+#define ALERT_TITLE_LEN   48   // Pi 5 cuts titles at 40 chars, details at 60
+#define ALERT_DETAIL_LEN  72
+
+enum class AlertLevel : uint8_t { Critical, Warning, Info };
+
+struct Alert {
+    uint32_t   id;
+    AlertLevel level;
+    char       title[ALERT_TITLE_LEN];
+    char       detail[ALERT_DETAIL_LEN];
+    uint32_t   ts;      // epoch seconds (UTC)
+    uint16_t   count;   // repeats merged by the Pi 5
+};
+
+struct AlertList {
+    uint8_t count;
+    Alert   items[ALERTS_MAX];   // newest first
+};
+
+struct AlertSummary {
+    uint16_t unacked;
+    uint16_t critical;
+    uint32_t latest_id;
+};
+
 // ---------------- Wi-Fi setup flow (wifi_setup.cpp -> ui_wifi.cpp) ----------------
 enum class WifiSetupState : uint8_t {
     Connecting,       // trying secrets.h / saved network (screen: spinner)

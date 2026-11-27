@@ -36,3 +36,31 @@ const char *wifi_fail_reason_text(WifiFailReason r);
 // Wi-Fi join QR payload: WIFI:T:WPA;S:<ssid>;P:<pass>;;  (T:nopass when pass
 // is empty). Escapes \ ; , : " as the format requires. False if it doesn't fit.
 bool build_wifi_qr(char *buf, size_t buf_len, const char *ssid, const char *pass);
+
+// ---------------- Pi 5 REST API (task 8) ----------------
+
+// Copies UTF-8 `src` into `dst` keeping only what the built-in Montserrat
+// fonts can draw: printable ASCII, the degree sign, and the bullet (a middle
+// dot becomes a bullet). Any other character becomes '?', control characters
+// a space. Never splits a multi-byte character; always NUL-terminates.
+void ascii_sanitize(char *dst, size_t dst_len, const char *src);
+
+// "critical" / "warning" / "info"; anything else (or null) is Info.
+AlertLevel parse_alert_level(const char *s);
+
+// GET /api/alerts/summary: {"unacked":3,"critical":1,"latest_id":128}
+bool parse_alerts_summary(const char *json, size_t len, AlertSummary &out);
+
+// GET /api/alerts: {"items":[{id, level, title, detail, ts, count, ack}]}.
+// Keeps at most ALERTS_MAX items (the Pi 5 should never send more), skips
+// items without an id or title, sanitizes text. False (and `out` untouched)
+// on malformed JSON or a missing "items" array.
+bool parse_alerts(const char *json, size_t len, AlertList &out);
+
+// GET /api/location: {"city":"TP Dong Nai","lat":10.95,"lon":106.84}.
+// False if the city is empty or lat/lon are missing or out of range.
+bool parse_location(const char *json, size_t len, Location &out);
+
+// "now" (< 1 min), "N min", "N h", "N d" between epoch `ts` and `now`.
+// Empty string when the clock isn't set or `ts` is in the future by > 1 min.
+void format_age(char *buf, size_t buf_len, uint32_t ts, uint32_t now);
