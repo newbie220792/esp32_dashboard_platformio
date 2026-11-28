@@ -38,6 +38,10 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - Phiên bản firmware: **một nguồn duy nhất** `-D FW_VERSION=\"x.y.z\"` trong `build_flags` (`platformio.ini`).
   Thiếu macro thì `app_config.h` báo `#warning` và hiển thị `v?`, build không lỗi.
 - Draw buffer: 2 buffer 1/4 màn hình (480x68) trong PSRAM, chế độ partial.
+- Heap LVGL 192 KB cấp trong PSRAM (`LV_MEM_POOL_ALLOC` trong `lv_conf.h`). **LVGL hết heap = màn đen**: malloc lỗi
+  thì `LV_ASSERT_MALLOC` treo task `lvgl` trong `while(1)` mà không in gì (bản 64 KB trong RAM nội đầy 99 % sau
+  task 9). Log `[ui] init done: LVGL heap free ...` sau `ui_init` để theo dõi; màn đen mà vẫn có log mạng thì xem
+  dòng này trước.
 
 ## Công nghệ
 
@@ -146,6 +150,8 @@ keep-alive (`services/pi5_api.*`). Chi tiết: `docs/pi5_api.md`.
   chuông + bánh răng (khung 28px, vùng chạm 40px), icon Wi-Fi 20px, giờ. Chạm icon Wi-Fi khi chưa kết nối thì mở
   lại màn cấu hình. Chấm: màn 1 và 3 là MQTT, màn 2 là lần lấy thời tiết gần nhất. Nhãn màn 2 = thành phố của Pi 5.
   Chuông có chấm đỏ `#FF6B6B` 10px (viền `#0B0F14`) khi `unacked > 0`.
+- Hàng flex rộng `LV_SIZE_CONTENT` phải dùng `LV_FLEX_ALIGN_START` (đặt hàng bằng `lv_obj_align`). Với `END`, LVGL
+  9.2 tính độ rộng hàng chỉ bằng phần tử cuối và cắt mất các phần tử khác (trước đây mất chuông, bánh răng, Wi-Fi).
 - Màn phủ (`ui/components/overlay.*`): `lv_screen` riêng, thanh trên 36px `< Back` + tiêu đề. Back về tab đã rời.
   Alerts xóa widget dòng khi rời màn (`lv_obj_clean`), dữ liệu giữ trong state.
 - Settings: 5 hàng cao 36px, cách 6px (Brightness, Screen off, Temperature, Location, System info), không cuộn.
