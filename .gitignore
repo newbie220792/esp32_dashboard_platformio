@@ -8,3 +8,9 @@ logs
 compile_commands.json
 .cache
 .idea
+# credentials
+include/secrets.h
+__pycache__/
+
+.claude/settings.local.json
+.vscode/

@@ -1,0 +1,14 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(pio run)",
+            "Bash(pio run -e *)",
+            "Bash(pio check:*)",
+            "Bash(git status)",
+            "Bash(git diff:*)",
+            "Bash(git log:*)",
+            "Bash(git push:*)"
+        ],
+        "deny": ["Read(./include/secrets.h)", "Read(./.env)"]
+    }
+}
