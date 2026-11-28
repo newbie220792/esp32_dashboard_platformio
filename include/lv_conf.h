@@ -11,7 +11,13 @@
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_BUILTIN
 #define LV_USE_STDLIB_STRING LV_STDLIB_CLIB
 #define LV_USE_STDLIB_SPRINTF LV_STDLIB_CLIB
-#define LV_MEM_SIZE (64U * 1024U)
+/* LVGL heap in PSRAM: 64 KB internal was full after ui_init (task 9: 99 %, the
+ * first lv_timer_handler then hung in LV_ASSERT_MALLOC = black screen). PSRAM
+ * also keeps internal RAM for Wi-Fi/TLS. Falls back to internal RAM without PSRAM. */
+#define LV_MEM_SIZE (192U * 1024U)
+#define LV_MEM_POOL_INCLUDE <esp_heap_caps.h>
+#define LV_MEM_POOL_ALLOC(size) \
+    (heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) ?: heap_caps_malloc(size, MALLOC_CAP_8BIT))
 
 /* HAL */
 #define LV_DEF_REFR_PERIOD 20

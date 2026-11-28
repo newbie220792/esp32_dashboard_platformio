@@ -307,6 +307,11 @@ void ui_init() {
     lv_timer_create(poll_timer_cb, POLL_MS, nullptr);
     lv_timer_create(power_timer_cb, SCREEN_POWER_MS, nullptr);
     poll_all();
+
+    lv_mem_monitor_t m;   // headroom check: a failed LVGL malloc hangs the LVGL task
+    lv_mem_monitor(&m);
+    Serial.printf("[ui] init done: LVGL heap free %u (used %u%%, biggest block %u)\n", (unsigned)m.free_size,
+                  m.used_pct, (unsigned)m.free_biggest_size);
 }
 
 void ui_task(void *) {

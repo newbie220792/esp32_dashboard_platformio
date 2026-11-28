@@ -90,7 +90,10 @@ void status_bar_create(lv_obj_t *scr, int page_count, const StatusBarActions &ac
     }
 
     // right: bell + gear + wifi + clock
-    lv_obj_t *right = row(bar, LV_FLEX_ALIGN_END, 8, LV_ALIGN_RIGHT_MID);
+    // START, not END: in a content-sized row END places the children at negative
+    // x, LVGL then sizes the row to the clock only and clips bell/gear/Wi-Fi.
+    // LV_ALIGN_RIGHT_MID already puts the whole row on the right edge.
+    lv_obj_t *right = row(bar, LV_FLEX_ALIGN_START, 8, LV_ALIGN_RIGHT_MID);
     lv_obj_t *bell = icon_button(right, LV_SYMBOL_BELL, s_actions.on_alerts_tap);
     s_badge = ui_box(bell);   // red dot, #0B0F14 ring so it reads over the glyph
     lv_obj_set_size(s_badge, BADGE, BADGE);
