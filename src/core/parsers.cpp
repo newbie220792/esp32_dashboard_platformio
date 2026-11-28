@@ -392,3 +392,34 @@ void format_size_pair(char *buf, size_t buf_len, uint64_t part, uint64_t total) 
     put_mb(b, sizeof b, total);
     snprintf(buf, buf_len, "%s / %s MB", a, b);
 }
+
+// ---------------- photos ----------------
+
+static bool valid_photo_id(const char *id) {
+    const size_t n = strlen(id);
+    if (n == 0 || n >= PHOTO_ID_LEN) return false;
+    for (const char *p = id; *p; p++) {
+        const char c = *p;
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-'))
+            return false;
+    }
+    return true;
+}
+
+bool parse_photo_list(const char *json, size_t len, PhotoList &out) {
+    JsonDocument doc;
+    if (deserializeJson(doc, json, len)) return false;
+    JsonArray items = doc["items"];
+    if (items.isNull()) return false;
+    static PhotoList tmp;   // ~1.3 KB; callers are single-threaded (photo task / tests)
+    tmp = PhotoList{};
+    copy_str(tmp.rev, sizeof tmp.rev, doc["rev"] | "");
+    for (JsonVariant it : items) {
+        if (tmp.count >= PHOTO_MAX_ITEMS) break;
+        const char *id = it["id"] | "";
+        if (!valid_photo_id(id)) continue;
+        copy_str(tmp.ids[tmp.count++], PHOTO_ID_LEN, id);
+    }
+    out = tmp;
+    return true;
+}

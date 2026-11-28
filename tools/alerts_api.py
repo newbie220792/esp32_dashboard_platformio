@@ -8,6 +8,8 @@ Endpoints (JSON, "Authorization: Bearer <token>" required on every call)
   POST /api/alerts/ack-all  {"acked":N}
   GET  /api/location        {"city":"TP Dong Nai","lat":10.9574,"lon":106.8427}
   GET  /api/health          {"ok":true}  (System info screen: round-trip time)
+  GET  /api/photos          {"rev":"a41f9c","count":24,"items":[{"id":"p001"}]}  (task 10)
+  GET  /api/photos/<id>.jpg processed 480x272 baseline JPEG, always with Content-Length
 Errors: 400 / 401 / 404 / 500 with {"error":"..."}.
 
 Alerts live in SQLite. A rule engine checks the Pi every --interval seconds:
@@ -24,8 +26,11 @@ pass, so editing it needs no restart). Missing keys use DEFAULT_CONFIG.
 Token: env ALERTS_API_TOKEN (required). Plain HTTP: bind to the LAN address
 only and firewall the port from outside; the token travels in clear text.
 
+Photos (task 10): set "photos_dir" in the config; see photos.py for the
+processing and the other photos_* keys. Needs Pillow; without it the list is empty.
+
 Setup on the Pi:
-  pip install psutil                       # for the rules (use a venv on Bookworm)
+  pip install psutil pillow                # rules + photos (use a venv on Bookworm)
   export ALERTS_API_TOKEN=$(openssl rand -hex 24)
   sudo -E python3 alerts_api.py --bind 192.168.1.50 --port 8080 \\
       --config /etc/esp32-dashboard/alerts.json --db /var/lib/esp32-dashboard/alerts.db
@@ -42,6 +47,8 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+import photos
 
 MAX_ITEMS = 10
 TITLE_MAX = 40
@@ -249,7 +256,7 @@ def rule_loop(store, config_path, interval, stop):
 
 # ---------------------------------------------------------------- HTTP
 
-def make_handler(store, token, config_path):
+def make_handler(store, token, config_path, library=None):
     expected = ("Bearer " + token).encode()
 
     class Handler(BaseHTTPRequestHandler):
@@ -267,6 +274,15 @@ def make_handler(store, token, config_path):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+
+        def _send_jpeg(self, data, pid):
+            self.send_response(200)
+            self.send_header("Content-Type", "image/jpeg")
+            self.send_header("Content-Length", str(len(data)))   # the ESP32 sizes its read from this
+            self.send_header("Cache-Control", "max-age=3600")
+            self.send_header("ETag", '"%s-%d"' % (pid, len(data)))
+            self.end_headers()
+            self.wfile.write(data)
 
         def _authorized(self):
             got = (self.headers.get("Authorization") or "").encode()
@@ -291,6 +307,15 @@ def make_handler(store, token, config_path):
                     self._send(200, store.summary())
                 elif path == "/api/alerts":
                     self._send(200, {"items": store.items()})
+                elif path == "/api/photos":
+                    self._send(200, library.listing() if library else {"rev": "0", "count": 0, "items": []})
+                elif path.startswith("/api/photos/") and path.endswith(".jpg"):
+                    pid = path[len("/api/photos/"):-len(".jpg")]
+                    data = library.image(pid) if library else None
+                    if data is None:
+                        self._send(404, {"error": "no such photo"})
+                    else:
+                        self._send_jpeg(data, pid)
                 elif path == "/api/location":
                     loc = location_payload(load_config(config_path))
                     if loc is None:
@@ -326,6 +351,7 @@ def main():
     p.add_argument("--config", default=os.getenv("ALERTS_API_CONFIG"))
     p.add_argument("--interval", type=float, default=10.0, help="rule pass period (s)")
     p.add_argument("--no-rules", action="store_true", help="API only (testing)")
+    p.add_argument("--photo-scan", type=float, default=60.0, help="photo folder rescan period (s)")
     args = p.parse_args()
 
     token = os.getenv("ALERTS_API_TOKEN", "")
@@ -337,7 +363,15 @@ def main():
     if not args.no_rules:
         threading.Thread(target=rule_loop, args=(store, args.config, args.interval, stop), daemon=True).start()
 
-    server = ThreadingHTTPServer((args.bind, args.port), make_handler(store, token, args.config))
+    library = photos.PhotoLibrary()
+    try:
+        import PIL  # noqa: F401
+        threading.Thread(target=photos.scan_loop, daemon=True,
+                         args=(library, lambda: load_config(args.config), args.photo_scan, stop)).start()
+    except ImportError:
+        print("Pillow not installed: /api/photos stays empty (pip install pillow)", file=sys.stderr)
+
+    server = ThreadingHTTPServer((args.bind, args.port), make_handler(store, token, args.config, library))
     print(f"alerts API on http://{args.bind}:{args.port}", file=sys.stderr)
     try:
         server.serve_forever()

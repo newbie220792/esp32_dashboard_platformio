@@ -344,6 +344,34 @@ static void test_format_size() {
     TEST_ASSERT_EQUAL_STRING("1.62 / 1.94 MB", b);
 }
 
+// ---------------- photos ----------------
+static void test_photo_list() {
+    static PhotoList l;
+    const char *j = R"({"rev":"a41f9c","count":3,"items":[{"id":"p001"},{"id":"../etc"},{"id":"p_2-x"},{"id":"toolong123456"},{"id":""},{}]})";
+    TEST_ASSERT_TRUE(parse_photo_list(j, strlen(j), l));
+    TEST_ASSERT_EQUAL_STRING("a41f9c", l.rev);
+    TEST_ASSERT_EQUAL(2, l.count);                       // unsafe / too long / empty ids skipped
+    TEST_ASSERT_EQUAL_STRING("p001", l.ids[0]);
+    TEST_ASSERT_EQUAL_STRING("p_2-x", l.ids[1]);
+
+    const char *empty = R"({"rev":"0","count":0,"items":[]})";
+    TEST_ASSERT_TRUE(parse_photo_list(empty, strlen(empty), l));
+    TEST_ASSERT_EQUAL(0, l.count);
+
+    // more than 100: keep the first 100
+    static char big[4096];
+    int n = snprintf(big, sizeof big, "{\"rev\":\"r\",\"items\":[");
+    for (int i = 0; i < 120; i++) n += snprintf(big + n, sizeof big - n, "%s{\"id\":\"i%d\"}", i ? "," : "", i);
+    snprintf(big + n, sizeof big - n, "]}");
+    TEST_ASSERT_TRUE(parse_photo_list(big, strlen(big), l));
+    TEST_ASSERT_EQUAL(PHOTO_MAX_ITEMS, l.count);
+    TEST_ASSERT_EQUAL_STRING("i99", l.ids[99]);
+
+    TEST_ASSERT_FALSE(parse_photo_list("{bad", 4, l));
+    TEST_ASSERT_FALSE(parse_photo_list("{\"rev\":\"x\"}", 12, l));
+    TEST_ASSERT_EQUAL_STRING("i99", l.ids[99]);           // untouched on failure
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_ascii_sanitize);
@@ -370,5 +398,6 @@ int main() {
     RUN_TEST(test_topic_matches);
     RUN_TEST(test_wifi_fail_reason);
     RUN_TEST(test_wifi_qr);
+    RUN_TEST(test_photo_list);
     return UNITY_END();
 }

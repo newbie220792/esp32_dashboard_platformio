@@ -16,3 +16,4 @@ void status_bar_set_title(const char *title);   // copied; no-op when unchanged
 void status_bar_set_dot(bool ok);    // green #3DDC84 / gray #6B7788
 void status_bar_set_wifi(bool ok);   // same colours; never hidden
 void status_bar_set_alerts(bool show_badge);    // red dot on the bell
+void status_bar_set_visible(bool visible);      // hidden on the Photos tab (full-screen photo)

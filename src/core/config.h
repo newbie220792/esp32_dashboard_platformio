@@ -30,6 +30,10 @@ void config_erase_saved_wifi();
 Settings config_load_settings();
 void config_save_settings(const Settings &s);
 
+// Photos tab slide time (NVS namespace "settings", key "photo_s"): 5 or 10 s, default 10.
+uint8_t config_load_photo_s();
+void config_save_photo_s(uint8_t seconds);
+
 // Last location received from the Pi 5 (NVS namespace "location").
 bool config_load_location(Location &out);
 void config_save_location(const Location &loc);

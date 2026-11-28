@@ -23,12 +23,11 @@
 static EventGroupHandle_t s_ev;
 static volatile bool s_open = false;
 static volatile uint32_t s_sketch_size = 0;   // set once by the task
-static uint32_t s_app_size, s_ota_size;       // partition table: fixed after init
+static uint32_t s_app_size;                   // partition table: fixed after init
 
 void sysinfo_service_init() {
     s_ev = xEventGroupCreate();
     s_app_size = hal_sys_app_partition_size();
-    s_ota_size = hal_sys_ota_slot_size();
 }
 
 void sysinfo_service_set_open(bool open) {
@@ -67,15 +66,14 @@ void sysinfo_service_read(SysInfo &out) {
     out.psram_total = hal_sys_psram_total();
     out.sketch_size = s_sketch_size;
     out.app_size = s_app_size;
-    out.ota_size = s_ota_size;
 }
 
 // Same numbers as the screen, for checking against the serial log.
 static void log_device() {
-    Serial.printf("[sysinfo] fw v%s, heap %u / %u, psram %u / %u, sketch %u, app partition %u, ota slot %u\n",
+    Serial.printf("[sysinfo] fw v%s, heap %u / %u, psram %u / %u, sketch %u, app partition %u\n",
                   FW_VERSION, (unsigned)hal_sys_heap_free(), (unsigned)hal_sys_heap_total(),
                   (unsigned)hal_sys_psram_free(), (unsigned)hal_sys_psram_total(), (unsigned)s_sketch_size,
-                  (unsigned)s_app_size, (unsigned)s_ota_size);
+                  (unsigned)s_app_size);
 }
 
 // ---------------- health check (sysinfo task only) ----------------

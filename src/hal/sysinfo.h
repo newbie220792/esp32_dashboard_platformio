@@ -12,4 +12,3 @@ uint32_t hal_sys_psram_total();
 // Call once from a background task, never from the LVGL task.
 uint32_t hal_sys_sketch_size();
 uint32_t hal_sys_app_partition_size();   // the running app partition
-uint32_t hal_sys_ota_slot_size();        // next OTA slot; 0 = no OTA partition in the table

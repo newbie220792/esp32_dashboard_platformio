@@ -1,4 +1,4 @@
-# Pi 5 REST API (alerts + location)
+# Pi 5 REST API (alerts, location, photos)
 
 Served by `tools/alerts_api.py` (Python stdlib + `psutil` for the rules, SQLite storage). Read by the
 ESP32's `services/alerts_service.cpp` and `services/location_service.cpp` through `services/pi5_api.cpp`.
@@ -23,6 +23,9 @@ ESP32's `services/alerts_service.cpp` and `services/location_service.cpp` throug
 | POST | `/api/alerts/ack-all` | `Clear all`; the list is emptied only after a 200 | `{"acked":4}` |
 | GET | `/api/location` | at boot, after each reconnect, every 5 min | `{"city":"TP Dong Nai","lat":10.9574,"lon":106.8427}` |
 | GET | `/api/health` | System info screen (task 9): only while it is open and Wi-Fi is up, every 10 s, 3 s timeout; the round trip is shown as `OK • 12 ms` | `{"ok":true}` |
+
+| GET | `/api/photos` | Photos tab: each time the tab opens and when the slideshow wraps to photo 1; 5 s timeout | `{"rev":"a41f9c","count":24,"items":[{"id":"p001"}]}` |
+| GET | `/api/photos/{id}.jpg` | Photos tab: the shown photo and the next one (prefetch); 8 s timeout | 480x272 baseline JPEG, `Content-Length` always set, 404 if the id is gone |
 
 `/api/health` needs the token like every other endpoint. A Pi 5 still running the task 8 version answers 404;
 the ESP32 then times `GET /api/alerts/summary` instead until the next reboot.
@@ -78,3 +81,39 @@ curl -H "Authorization: Bearer $ALERTS_API_TOKEN" http://192.168.1.50:8080/api/l
 ```
 
 `--no-rules` serves the API without the rule engine, for testing on a machine that isn't a Pi.
+
+## Photos (task 10)
+
+Served by `tools/alerts_api.py` from `tools/photos.py` (needs Pillow; without it the list is empty).
+
+- **The Pi 5 decides** which photos are shown and in what order; the ESP32 plays the list as received.
+- `rev` changes when the set or the order changes. The ESP32 re-reads the list when the tab opens and when it
+  wraps back to photo 1; with the same `rev` it keeps its position.
+- `items`: at most 100. `id`: 1–12 ASCII chars (`[a-z0-9]`, a hash of the file path, never the file name).
+- `GET /api/photos/{id}.jpg` always sends `Content-Length` (never chunked); the ESP32 refuses anything above
+  96 KB without reading it. Unknown or removed id: 404, the ESP32 skips to the next photo.
+
+Image format (the ESP32 does not scale, rotate or convert):
+
+- exactly **480x272**, "cover" crop (fills the frame, centred)
+- EXIF orientation applied, then EXIF / ICC removed; colours converted to **sRGB**
+- **baseline** JPEG (no progressive: JPEGDEC on the ESP32 rejects it), 4:2:0, quality 80, lowered in steps
+  until the file is **≤ 60 KB**; files that stay above **90 KB** are skipped
+- processed **once** into the cache folder, again only when the source file changes (mtime + size); the
+  folder is rescanned every 60 s (`--photo-scan`), never per request
+
+Config keys (same file as `/api/location`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `photos_dir` | none (= no photos) | source folder, scanned recursively; hidden files/folders ignored |
+| `photos_cache` | `<photos_dir>/.esp32-cache` | processed copies + `index.json` |
+| `photos_order` | `name` | `name`, `mtime` (newest first) or `shuffle` (reshuffled once a day) |
+| `photos_limit` | 100 | at most 100 |
+
+ESP32 NVS key: `photo_s` (namespace `settings`), 5 or 10 seconds per photo, default 10.
+
+```sh
+curl -H "Authorization: Bearer $ALERTS_API_TOKEN" http://192.168.1.50:8080/api/photos
+curl -H "Authorization: Bearer $ALERTS_API_TOKEN" -o p.jpg http://192.168.1.50:8080/api/photos/<id>.jpg
+```

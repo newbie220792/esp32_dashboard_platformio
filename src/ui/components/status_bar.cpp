@@ -10,6 +10,7 @@
 #define ICON_HIT   6    // extra touch margin each side: 28 + 2*6 = 40px target
 #define BADGE      10
 
+static lv_obj_t *s_bar;
 static lv_obj_t *s_pills[MAX_PAGES];
 static int s_pages;
 static lv_obj_t *s_dot, *s_title, *s_wifi, *s_clock, *s_badge;
@@ -65,6 +66,7 @@ void status_bar_create(lv_obj_t *scr, int page_count, const StatusBarActions &ac
     s_actions = actions;
 
     lv_obj_t *bar = ui_box(scr);
+    s_bar = bar;
     lv_obj_set_size(bar, LV_PCT(100), UI_STATUS_H);
     lv_obj_set_style_pad_hor(bar, UI_PAD, 0);
     lv_obj_align(bar, LV_ALIGN_TOP_MID, 0, 0);
@@ -81,7 +83,7 @@ void status_bar_create(lv_obj_t *scr, int page_count, const StatusBarActions &ac
     lv_obj_set_style_max_width(s_title, 140, 0);   // stays clear of the centred pills
 
     // center: page pills
-    lv_obj_t *pills = row(bar, LV_FLEX_ALIGN_CENTER, 5, LV_ALIGN_CENTER);
+    lv_obj_t *pills = row(bar, LV_FLEX_ALIGN_CENTER, 6, LV_ALIGN_CENTER);   // 5 dots, 6 px apart (task 10)
     for (int i = 0; i < s_pages; i++) {
         s_pills[i] = ui_box(pills);
         lv_obj_set_size(s_pills[i], 8, 4);
@@ -149,4 +151,10 @@ void status_bar_set_alerts(bool show_badge) {
     s_badge_on = show_badge;
     if (show_badge) lv_obj_remove_flag(s_badge, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(s_badge, LV_OBJ_FLAG_HIDDEN);
+}
+
+void status_bar_set_visible(bool visible) {
+    if (visible == !lv_obj_has_flag(s_bar, LV_OBJ_FLAG_HIDDEN)) return;
+    if (visible) lv_obj_remove_flag(s_bar, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(s_bar, LV_OBJ_FLAG_HIDDEN);
 }

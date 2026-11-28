@@ -275,18 +275,11 @@ static void refresh() {
         meter_set(s_psram, "--", 0, COL_TRACK);
     }
 
-    // Used space: longer = closer to the limit (the OTA slot when the table
-    // has one, else the running app partition and "No OTA").
-    const uint32_t limit = si.ota_size ? si.ota_size : si.app_size;
-    if (si.sketch_size && limit) {
-        pm = permille(si.sketch_size, limit);
-        if (si.ota_size) {
-            format_size_pair(b, sizeof b, si.sketch_size, si.ota_size);
-        } else {
-            char n[16];
-            format_size(n, sizeof n, si.sketch_size);
-            snprintf(b, sizeof b, "%s " BULLET " No OTA", n);
-        }
+    // Used space against the single app partition (huge_app.csv, ~3 MB, no OTA):
+    // longer = closer to the limit.
+    if (si.sketch_size && si.app_size) {
+        pm = permille(si.sketch_size, si.app_size);
+        format_size_pair(b, sizeof b, si.sketch_size, si.app_size);
         meter_set(s_flash, b, pm, pm >= 950 ? COL_RED : pm >= 800 ? COL_YELLOW : COL_CPU);
     } else {
         meter_set(s_flash, "--", 0, COL_TRACK);

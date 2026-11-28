@@ -21,6 +21,7 @@ static Settings s_settings;
 static LocationState s_location;
 static AlertsState s_alerts;
 static ApiHealthState s_api_health;
+static PhotoState s_photos;
 
 namespace {
 struct Lock {
@@ -298,4 +299,21 @@ void state_set_api_health(ApiHealth status, uint16_t rtt_ms) {
         if (changed) bump(StateGroup::ApiHealth);
     }
     if (changed) notify(StateGroup::ApiHealth);
+}
+
+// ---------------- photos ----------------
+
+PhotoState state_get_photos() {
+    Lock l;
+    return s_photos;
+}
+
+void state_update_photos(bool (*fn)(PhotoState &st, void *ctx), void *ctx) {
+    bool changed;
+    {
+        Lock l;
+        changed = fn(s_photos, ctx);
+        if (changed) bump(StateGroup::Photos);
+    }
+    if (changed) notify(StateGroup::Photos);
 }
