@@ -6,9 +6,9 @@ Firmware ESP32 hiển thị giao diện LVGL 9 gồm 3 màn hình vuốt ngang (
 2. **Weather**: thời tiết thời gian thực (Open-Meteo, không cần API key).
 3. **Home switches**: điều khiển công tắc nhà theo phòng → cụm → 3 công tắc qua MQTT.
 
-Ngoài dải vuốt có 2 màn phủ (mở bằng chuông và bánh răng trên thanh trạng thái, task 8):
-**Alerts** (tối đa 10 cảnh báo từ Pi 5 qua REST) và **Settings** (độ sáng, tắt màn hình, °C/°F,
-vị trí chỉ đọc lấy từ Pi 5).
+Ngoài dải vuốt có 3 màn phủ: **Alerts** (chuông, tối đa 10 cảnh báo từ Pi 5 qua REST) và **Settings**
+(bánh răng: độ sáng, tắt màn hình, °C/°F, vị trí chỉ đọc lấy từ Pi 5) của task 8, và **System info** (task 9,
+mở từ hàng cuối của Settings: mạng, bộ nhớ, firmware; chỉ đọc).
 
 Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 Đặc tả công việc: `tasks/`.
@@ -34,7 +34,9 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - Chỉ xoay được 0° hoặc 180° (`TFT_ROTATION` 0 hoặc 2), không dùng 90°/270°.
 - Thẻ SD dùng chung bus với màn: nếu sau này dùng SD thì phải sắp thứ tự thao tác và kiểm tra lại cảm ứng.
 - Flash chỉ 4 MB (`huge_app.csv`, 3 MB cho app, không có OTA; nạp firmware qua USB): chỉ bật font và widget
-  LVGL đang dùng. Sau task 8 firmware ~1.48 MB, vẫn vừa vùng OTA ~1.94 MB nếu sau này chia lại phân vùng.
+  LVGL đang dùng. Sau task 9 firmware ~1.49 MB, vẫn vừa vùng OTA ~1.94 MB nếu sau này chia lại phân vùng.
+- Phiên bản firmware: **một nguồn duy nhất** `-D FW_VERSION=\"x.y.z\"` trong `build_flags` (`platformio.ini`).
+  Thiếu macro thì `app_config.h` báo `#warning` và hiển thị `v?`, build không lỗi.
 - Draw buffer: 2 buffer 1/4 màn hình (480x68) trong PSRAM, chế độ partial.
 
 ## Công nghệ
@@ -64,18 +66,21 @@ Chỉ được phụ thuộc **xuống dưới** (kiểm tra bằng `grep` trư�
 
 ```
 app       src/app/app.*        khởi tạo theo thứ tự, tạo mọi task (stack + priority chỉ ở app.cpp)
-ui        src/ui/              ui_manager, theme, components/, screens/   ← chỉ tầng này gọi lv_*
+ui        src/ui/              ui_manager (điều hướng màn), theme,       ← chỉ tầng này gọi lv_*
+                               components/ (status_bar, overlay, gauge, alert_icon, icon_draw, ...),
+                               screens/ (monitor, weather, home, wifi, alerts, settings, sysinfo)
 services  src/services/        wifi, time, mqtt, pi5, home, weather,     ← không include ui/, không lv_*
-                               settings, location, alerts (+ pi5_api: HTTP tới Pi 5)
+                               settings, location, alerts, sysinfo (+ pi5_api: HTTP tới Pi 5)
 core      src/core/            state, events, config, models, parsers    ← không include services/ui/hal
-hal       src/hal/             display, touch, backlight, button         ← chỉ biết phần cứng + driver LVGL
+hal       src/hal/             display, touch, backlight, button,        ← chỉ biết phần cứng + driver LVGL
+                               sysinfo (heap, PSRAM, uptime, sketch/phân vùng)
 ```
 
 - `ui` không include `hal/` hay `board_pins.h` (kích thước màn lấy bằng `lv_display_get_*` / `LV_PCT`).
 - Thứ tự khởi tạo (`app_init`): `state`/`events` → `hal` (button, display + LVGL, backlight, touch) →
   `settings` (NVS → độ sáng + đơn vị) → `location` (bản NVS hoặc mặc định) → `ui_init` →
   `wifi` → `time` → `mqtt` → `pi5`, `home`, `weather` (đăng ký route MQTT trước khi task `mqtt` chạy) → `alerts`
-  → tạo task.
+  → `sysinfo` → tạo task.
 - `main.cpp` chỉ gọi `app_init()`. Include theo dạng `#include "services/wifi_service.h"` (`-I src`).
 - `include/board_pins.h`: chân GPIO, kích thước panel (chỉ `hal/` dùng). `include/app_config.h`: topic, chu kỳ,
   thời gian chờ, vị trí mặc định (`DEFAULT_CITY/LAT/LON`, chỉ dùng khi Pi 5 chưa trả lời lần nào).
@@ -89,6 +94,7 @@ hal       src/hal/             display, touch, backlight, button         ← ch�
 - `include/secrets.h`: Wi-Fi, MQTT, mật khẩu AP `SETUP_AP_PASSWORD`, API Pi 5 (`PI5_API_HOST/PORT/TOKEN`;
   thiếu thì build vẫn được, cảnh báo/vị trí tắt) (không commit, không đọc). Mẫu: `include/secrets.example.h`
 - Topic MQTT chi tiết: `docs/mqtt_topics.md`. Luồng Wi-Fi: `.claude/rules/wifi.md`. Màn 3: `.claude/rules/home.md`.
+- **Thêm màn phủ** = 1 `screen_*` + nhánh điều hướng trong `ui_manager.cpp` (`overlay_active()`, `show_screen()`).
 - **Thêm tab mới** = 1 service (nếu có dữ liệu mới: struct + nhóm `StateGroup` trong `core/state`) + 1 `screen_*`
   (`create` + `poll`) + 1 dòng trong `kTiles` (`ui_manager.cpp`). **Thêm topic** = 1 handler + `mqtt_service_route()`.
 
@@ -123,6 +129,8 @@ keep-alive (`services/pi5_api.*`). Chi tiết: `docs/pi5_api.md`.
 - `GET /api/alerts` (tối đa 10, mới nhất trước) chỉ khi màn Alerts mở: lúc mở, mỗi 20 s, hoặc khi `latest_id`
   đổi. `POST /api/alerts/ack-all` cho `Clear all`: chỉ xóa danh sách khi nhận 200.
 - `GET /api/location` lúc khởi động, khi có lại mạng, mỗi 5 phút → nhãn tab Weather, hàng Location, tọa độ thời tiết.
+- `GET /api/health` (`{"ok":true}`) chỉ khi màn System info mở và có IP: mỗi 10 s, timeout 3 s, task `sysinfo`
+  (stack 6 KB), đo thời gian khứ hồi. Pi 5 trả 404 thì chuyển sang đo `GET /api/alerts/summary`.
 - Mọi chuỗi từ Pi 5 qua `ascii_sanitize()`: giữ ASCII, `°`, `•` (`·` thành `•`), ký tự khác thành `?`
   (font Montserrat dựng sẵn không có tiếng Việt).
 
@@ -140,6 +148,23 @@ keep-alive (`services/pi5_api.*`). Chi tiết: `docs/pi5_api.md`.
   Chuông có chấm đỏ `#FF6B6B` 10px (viền `#0B0F14`) khi `unacked > 0`.
 - Màn phủ (`ui/components/overlay.*`): `lv_screen` riêng, thanh trên 36px `< Back` + tiêu đề. Back về tab đã rời.
   Alerts xóa widget dòng khi rời màn (`lv_obj_clean`), dữ liệu giữ trong state.
+- Settings: 5 hàng cao 36px, cách 6px (Brightness, Screen off, Temperature, Location, System info), không cuộn.
+  Hàng System info chạm được cả hàng (dòng phụ cố định `Network, memory, firmware` + mũi tên 18px).
+- System info (`screens/screen_sysinfo.*`): **chỉ tồn tại khi đang hiển thị**. Mở = tạo screen +
+  `lv_screen_load_anim(MOVE_LEFT, 200 ms)`; Back về **Settings** bằng `MOVE_RIGHT` với `auto_del`. Mọi lần chuyển
+  màn khác trong `ui_manager` đi qua `show_screen()`, hàm này xóa màn nếu còn. Timer 1 s tạo cùng màn và xóa trong
+  `LV_EVENT_DELETE`; nhãn dùng `lv_label_set_text_static` + so sánh, chỉ vẽ lại khi giá trị đổi. Log
+  `[ui] sysinfo #N ...` in bộ nhớ LVGL trước khi mở, sau khi dựng và sau khi đóng (kiểm tra rò rỉ).
+  - Thẻ Network (6 dòng 26px): Wi-Fi (SSID qua `ascii_sanitize`, cắt `...`), IP, Signal (4 vạch 3px cao 5/8/11/14:
+    ≥ -55 dBm 4, ≥ -65 3 xanh `#3DDC84`, ≥ -75 2 vàng `#F5A524`, ≥ -85 1 đỏ, còn lại 0; vạch tắt `#3A4656`), MQTT,
+    Pi 5 API (`OK • N ms` / `Error` / `--` / `Not set` khi thiếu `PI5_API_HOST`), Time (`Synced HH:MM` của lần SNTP
+    gần nhất, `sntp_set_time_sync_notification_cb`, hoặc `Not synced`).
+  - Thẻ Device: Firmware `v` + `FW_VERSION`, Uptime (`esp_timer` 64-bit: `2d 4h 12m` / `4h 12m` / `12m`), 3 thanh 6px:
+    Heap free `#3DD6C6` và PSRAM free `#9AA8FF` là phần **còn trống** (vàng < 20 %, đỏ < 10 %); Firmware size là phần
+    **đã dùng** so với khe OTA (xanh < 80 %, vàng ≥ 80 %, đỏ ≥ 95 %). Bảng `huge_app.csv` không có OTA: hiện
+    `1.49 MB • No OTA` và thanh so với phân vùng app 3 MB. Dung lượng < 1 MB ghi KB nguyên, từ 1 MB ghi MB 2 số lẻ
+    (bỏ số 0 cuối). `ESP.getSketchSize()` băm cả image nên chỉ gọi một lần trong task `sysinfo`.
+  - Không hiện mật khẩu, token hay MAC. Giá trị chưa có là `--` với chấm xám `#6B7788`.
 - Mức cảnh báo khác cả hình lẫn màu (`ui/components/alert_icon.*`): tròn đặc đỏ `!` (critical), tam giác vàng
   `!` (warning), vuông bo viền tím `i` (info).
 - Tắt màn hình: `ui_manager` đọc `lv_display_get_inactive_time()`; giảm sáng 5 s trước khi tắt. Khi tối/tắt có một

@@ -337,3 +337,58 @@ bool build_wifi_qr(char *buf, size_t buf_len, const char *ssid, const char *pass
            (open || (qr_append(buf, buf_len, pos, ";P:", false) && qr_append(buf, buf_len, pos, pass, true))) &&
            qr_append(buf, buf_len, pos, ";;", false);
 }
+
+// ---------------- System info screen (task 9) ----------------
+
+int rssi_bars(int rssi) {
+    if (rssi >= 0) return 0;   // no reading
+    if (rssi >= -55) return 4;
+    if (rssi >= -65) return 3;
+    if (rssi >= -75) return 2;
+    if (rssi >= -85) return 1;
+    return 0;
+}
+
+void format_uptime(char *buf, size_t buf_len, uint64_t s) {
+    if (!buf || buf_len == 0) return;
+    const unsigned long long d = s / 86400, h = (s % 86400) / 3600, m = (s % 3600) / 60;
+    if (d) snprintf(buf, buf_len, "%llud %lluh %llum", d, h, m);
+    else if (h) snprintf(buf, buf_len, "%lluh %llum", h, m);
+    else snprintf(buf, buf_len, "%llum", m);
+}
+
+static const uint64_t kKB = 1024, kMB = 1024 * 1024;
+
+// "%.2f" without trailing zeros: 8.00 -> "8", 7.10 -> "7.1".
+static void put_mb(char *buf, size_t buf_len, uint64_t bytes) {
+    snprintf(buf, buf_len, "%.2f", (double)bytes / (double)kMB);
+    char *dot = strchr(buf, '.');
+    if (!dot) return;
+    char *end = buf + strlen(buf) - 1;
+    while (end > dot && *end == '0') *end-- = '\0';
+    if (end == dot) *end = '\0';
+}
+
+void format_size(char *buf, size_t buf_len, uint64_t bytes) {
+    if (!buf || buf_len == 0) return;
+    if (bytes < kMB) {
+        snprintf(buf, buf_len, "%llu KB", (unsigned long long)(bytes / kKB));
+        return;
+    }
+    char n[24];
+    put_mb(n, sizeof n, bytes);
+    snprintf(buf, buf_len, "%s MB", n);
+}
+
+void format_size_pair(char *buf, size_t buf_len, uint64_t part, uint64_t total) {
+    if (!buf || buf_len == 0) return;
+    if (total < kMB) {
+        snprintf(buf, buf_len, "%llu / %llu KB", (unsigned long long)(part / kKB),
+                 (unsigned long long)(total / kKB));
+        return;
+    }
+    char a[24], b[24];
+    put_mb(a, sizeof a, part);
+    put_mb(b, sizeof b, total);
+    snprintf(buf, buf_len, "%s / %s MB", a, b);
+}

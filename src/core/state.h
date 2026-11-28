@@ -14,7 +14,7 @@
 
 #include "core/models.h"
 
-enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Settings, Location, Alerts, Count };
+enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Settings, Location, Alerts, ApiHealth, Count };
 
 struct NetState {
     bool     wifi_connected;   // STA associated *and* has an IP
@@ -59,6 +59,11 @@ struct AlertsState {
     AlertList    list;
     AlertsOp     op;           // request in flight
     AlertsErr    err;          // last list request outcome
+};
+
+struct ApiHealthState {
+    ApiHealth status;
+    uint16_t  rtt_ms;          // Ok only
 };
 
 void state_init();
@@ -109,3 +114,7 @@ void state_set_alerts_op(AlertsOp op);
 void state_set_alerts_list(const AlertList &list);              // op Idle, err None
 void state_set_alerts_error(AlertsErr err);                     // op Idle, list kept
 void state_alerts_cleared();                                    // empty list, unacked 0
+
+// ---- Pi 5 health check (sysinfo_service, task 9) ----
+ApiHealthState state_get_api_health();
+void state_set_api_health(ApiHealth status, uint16_t rtt_ms);   // bumps only on change

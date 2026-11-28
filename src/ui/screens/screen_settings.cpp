@@ -8,7 +8,8 @@
 #include "ui/components/overlay.h"
 #include "ui/theme.h"
 
-#define ROW_H     44
+#define ROW_H     36   // 5 rows x 36 + 4 x 6 fit the 218px content area without scrolling
+#define ROW_GAP   6
 #define LABEL_W   96
 #define SEG_H     32
 #define SEG_MIN_W 52
@@ -24,7 +25,7 @@ static lv_obj_t *s_slider, *s_pct, *s_city;
 static Segment s_sleep[4], s_unit[2];
 static uint32_t s_settings_ver = UINT32_MAX, s_loc_ver = UINT32_MAX;
 
-// One 44px card row with a 96px bold label on the left; returns the row.
+// One 36px card row with a 96px bold label on the left; returns the row.
 static lv_obj_t *settings_row(const char *label) {
     lv_obj_t *r = ui_card(s_o.content, 0);
     lv_obj_set_size(r, LV_PCT(100), ROW_H);
@@ -170,14 +171,44 @@ static void location_row() {
     lv_obj_add_event_cb(lock, lock_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
 }
 
+// ---------------- System info (navigation row) ----------------
+
+// 18px chevron, #E6EDF3.
+static void chevron_draw_cb(lv_event_t *e) {
+    IconCtx c = icon_ctx(e);
+    icon_line(c, 36, 18, 66, 50, 12, COL_TEXT);
+    icon_line(c, 66, 50, 36, 82, 12, COL_TEXT);
+}
+
+static void sysinfo_cb(lv_event_t *e) {
+    auto fn = reinterpret_cast<void (*)()>(lv_event_get_user_data(e));
+    if (fn) fn();
+}
+
+// Navigation row: the whole row is the touch target. The subtitle is fixed text.
+static void sysinfo_row(void (*on_open)()) {
+    lv_obj_t *r = settings_row("System info");
+    lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_bg_color(r, COL_SW_OFF, LV_STATE_PRESSED);
+    lv_obj_add_event_cb(r, sysinfo_cb, LV_EVENT_CLICKED, reinterpret_cast<void *>(on_open));
+    lv_obj_t *sub = ui_label(r, FONT_S, COL_MUTED, "Network, memory, firmware");
+    lv_obj_set_flex_grow(sub, 1);
+    lv_obj_set_style_text_align(sub, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_t *arrow = ui_box(r);
+    lv_obj_set_size(arrow, 18, 18);
+    lv_obj_add_event_cb(arrow, chevron_draw_cb, LV_EVENT_DRAW_MAIN, nullptr);
+}
+
 // ---------------- public ----------------
 
-lv_obj_t *screen_settings_create(void (*on_back)()) {
+lv_obj_t *screen_settings_create(void (*on_back)(), void (*on_sysinfo)()) {
     overlay_create(s_o, "Settings", on_back);
+    lv_obj_set_style_pad_row(s_o.content, ROW_GAP, 0);
     brightness_row();
     sleep_row();
     unit_row();
     location_row();
+    sysinfo_row(on_sysinfo);
     screen_settings_poll();
     return s_o.scr;
 }

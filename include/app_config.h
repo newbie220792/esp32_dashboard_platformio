@@ -2,6 +2,14 @@
 // Non-secret application settings. Credentials live in secrets.h (read only by
 // core/config.cpp); board GPIOs live in board_pins.h.
 
+// ---------------- Firmware version ----------------
+// Set in platformio.ini (build_flags = -D FW_VERSION=\"x.y.z\"), the one source
+// for the System info screen and the OTA check.
+#ifndef FW_VERSION
+#warning "FW_VERSION is not set in platformio.ini: System info shows v?"
+#define FW_VERSION "?"
+#endif
+
 // ---------------- Navigation ----------------
 #define AUTO_ROTATE_MS     0       // switch tile automatically (ms); 0 = off
 
@@ -37,6 +45,12 @@
 #define ALERTS_SUMMARY_RETRY_MS (30UL * 1000UL)        // then 60 s, 120 s, ... capped below
 #define ALERTS_SUMMARY_MAX_MS   (5UL * 60UL * 1000UL)
 #define ALERTS_LIST_MS          (20UL * 1000UL)        // list refresh while the screen is open
+
+// ---------------- System info screen (task 9) ----------------
+#define SYSINFO_REFRESH_MS      1000    // lv_timer while the screen is shown
+#define SYSINFO_API_MS          (10UL * 1000UL)   // Pi 5 health check while the screen is shown
+#define SYSINFO_API_TIMEOUT_MS  3000
+#define SCREEN_ANIM_MS          200     // Settings <-> System info slide
 
 // ---------------- Screen off (Settings) ----------------
 #define SCREEN_DIM_LEAD_MS 5000   // dim this long before the backlight turns off

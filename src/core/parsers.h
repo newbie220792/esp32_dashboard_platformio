@@ -64,3 +64,20 @@ bool parse_location(const char *json, size_t len, Location &out);
 // "now" (< 1 min), "N min", "N h", "N d" between epoch `ts` and `now`.
 // Empty string when the clock isn't set or `ts` is in the future by > 1 min.
 void format_age(char *buf, size_t buf_len, uint32_t ts, uint32_t now);
+
+// ---------------- System info screen (task 9) ----------------
+
+// Lit bars (0..4) for a Wi-Fi RSSI: >= -55 dBm 4, -56..-65 3, -66..-75 2,
+// -76..-85 1, below -85 0. 0 also for rssi >= 0 (no reading).
+int rssi_bars(int rssi_dbm);
+
+// "2d 4h 12m" (>= 1 day), "4h 12m" (>= 1 hour), "12m".
+void format_uptime(char *buf, size_t buf_len, uint64_t seconds);
+
+// One size: "182 KB" below 1 MB (whole KB), else "1.48 MB" (2 decimals,
+// trailing zeros dropped: "8 MB", "7.1 MB"). 1 KB = 1024 B.
+void format_size(char *buf, size_t buf_len, uint64_t bytes);
+
+// "182 / 320 KB", "7.1 / 8 MB", "1.62 / 1.94 MB": both numbers in the unit
+// that fits `total` (KB below 1 MB, else MB).
+void format_size_pair(char *buf, size_t buf_len, uint64_t part, uint64_t total);

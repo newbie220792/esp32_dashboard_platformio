@@ -151,6 +151,37 @@ struct AlertSummary {
     uint32_t latest_id;
 };
 
+// ---------------- System info screen (task 9) ----------------
+// Pi 5 reachability: GET /api/health (or /api/alerts/summary) while the screen is open.
+enum class ApiHealth : uint8_t {
+    Unknown,         // not tried yet / no Wi-Fi: gray "--"
+    Ok,              // 200: green, round trip in ms
+    Error,           // other status, error or timeout: red
+    NotConfigured,   // PI5_API_HOST missing in secrets.h
+};
+
+// Snapshot for the System info screen. Fixed-size strings, no allocation.
+struct SysInfo {
+    // network
+    bool      wifi_connected;
+    char      ssid[33];       // ASCII only (ascii_sanitize), "" when not connected
+    uint32_t  ip;             // IPv4, network byte order, 0 = none
+    int8_t    rssi;           // dBm, 0 = no reading
+    bool      mqtt_connected;
+    ApiHealth api;
+    uint16_t  api_rtt_ms;
+    bool      time_synced;
+    uint32_t  last_sync;      // epoch s of the last SNTP sync, 0 = none yet
+    // device
+    char      fw_version[16];
+    uint64_t  uptime_s;
+    uint32_t  heap_free, heap_total;
+    uint32_t  psram_free, psram_total;
+    uint32_t  sketch_size;    // 0 = not measured yet
+    uint32_t  app_size;       // running app partition
+    uint32_t  ota_size;       // OTA slot, 0 = no OTA partition
+};
+
 // ---------------- Wi-Fi setup flow (wifi_setup.cpp -> ui_wifi.cpp) ----------------
 enum class WifiSetupState : uint8_t {
     Connecting,       // trying secrets.h / saved network (screen: spinner)

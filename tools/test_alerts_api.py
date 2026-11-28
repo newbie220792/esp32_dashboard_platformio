@@ -174,6 +174,10 @@ class HttpTest(unittest.TestCase):
         self.assertEqual(self.call("GET", "/api/alerts/summary", conn=c)[1]["unacked"], 0)
         c.close()
 
+    def test_health(self):
+        self.assertEqual(self.call("GET", "/api/health"), (200, {"ok": True}))
+        self.assertEqual(self.call("GET", "/api/health", token=None)[0], 401)
+
     def test_location_and_404(self):
         self.assertEqual(self.call("GET", "/api/location"),
                          (200, {"city": "TP Dong Nai", "lat": 10.9574, "lon": 106.8427}))

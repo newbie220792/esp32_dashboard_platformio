@@ -20,6 +20,7 @@ static HomeState *s_home_p;   // PSRAM, see state_init()
 static Settings s_settings;
 static LocationState s_location;
 static AlertsState s_alerts;
+static ApiHealthState s_api_health;
 
 namespace {
 struct Lock {
@@ -277,4 +278,24 @@ void state_alerts_cleared() {
         bump(StateGroup::Alerts);
     }
     notify(StateGroup::Alerts);
+}
+
+// ---------------- Pi 5 health check ----------------
+
+ApiHealthState state_get_api_health() {
+    Lock l;
+    return s_api_health;
+}
+
+void state_set_api_health(ApiHealth status, uint16_t rtt_ms) {
+    bool changed;
+    {
+        Lock l;
+        if (status != ApiHealth::Ok) rtt_ms = 0;
+        changed = s_api_health.status != status || s_api_health.rtt_ms != rtt_ms;
+        s_api_health.status = status;
+        s_api_health.rtt_ms = rtt_ms;
+        if (changed) bump(StateGroup::ApiHealth);
+    }
+    if (changed) notify(StateGroup::ApiHealth);
 }

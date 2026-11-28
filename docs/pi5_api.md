@@ -22,6 +22,10 @@ ESP32's `services/alerts_service.cpp` and `services/location_service.cpp` throug
 | GET | `/api/alerts` | Alerts screen: on open, every 20 s while open, and when `latest_id` changes | `{"items":[...]}`, at most 10, newest first |
 | POST | `/api/alerts/ack-all` | `Clear all`; the list is emptied only after a 200 | `{"acked":4}` |
 | GET | `/api/location` | at boot, after each reconnect, every 5 min | `{"city":"TP Dong Nai","lat":10.9574,"lon":106.8427}` |
+| GET | `/api/health` | System info screen (task 9): only while it is open and Wi-Fi is up, every 10 s, 3 s timeout; the round trip is shown as `OK • 12 ms` | `{"ok":true}` |
+
+`/api/health` needs the token like every other endpoint. A Pi 5 still running the task 8 version answers 404;
+the ESP32 then times `GET /api/alerts/summary` instead until the next reboot.
 
 `/api/alerts` item:
 

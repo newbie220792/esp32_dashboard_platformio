@@ -7,6 +7,7 @@ Endpoints (JSON, "Authorization: Bearer <token>" required on every call)
                             at most 10, newest first, only active + unacked
   POST /api/alerts/ack-all  {"acked":N}
   GET  /api/location        {"city":"TP Dong Nai","lat":10.9574,"lon":106.8427}
+  GET  /api/health          {"ok":true}  (System info screen: round-trip time)
 Errors: 400 / 401 / 404 / 500 with {"error":"..."}.
 
 Alerts live in SQLite. A rule engine checks the Pi every --interval seconds:
@@ -284,7 +285,9 @@ def make_handler(store, token, config_path):
                 return
             path = self.path.split("?", 1)[0]
             try:
-                if path == "/api/alerts/summary":
+                if path == "/api/health":
+                    self._send(200, {"ok": True})
+                elif path == "/api/alerts/summary":
                     self._send(200, store.summary())
                 elif path == "/api/alerts":
                     self._send(200, {"items": store.items()})

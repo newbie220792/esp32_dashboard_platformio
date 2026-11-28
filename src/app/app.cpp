@@ -15,6 +15,7 @@
 #include "services/mqtt_service.h"
 #include "services/pi5_service.h"
 #include "services/settings_service.h"
+#include "services/sysinfo_service.h"
 #include "services/time_service.h"
 #include "services/weather_service.h"
 #include "services/wifi_service.h"
@@ -30,6 +31,7 @@
 //           "weather" : HTTPS poll every 10 min (TLS needs the deep stack)
 //           "alerts"  : Pi 5 REST: summary badge, list while Alerts is open, Clear all
 //           "location": Pi 5 REST /api/location at boot, on reconnect, every 5 min
+//           "sysinfo" : sketch size once; Pi 5 /api/health every 10 s while System info is open
 //   Services write the state store; the UI polls it (core/state.h).
 struct TaskDef {
     TaskFunction_t fn;
@@ -48,6 +50,7 @@ static const TaskDef kTasks[] = {
     {weather_service_task, "weather", 12288, 1, 0},
     {alerts_service_task, "alerts", 8192, 1, 0},       // HTTPClient + ArduinoJson (~4 KB doc)
     {location_service_task, "location", 6144, 1, 0},
+    {sysinfo_service_task, "sysinfo", 6144, 1, 0},     // HTTPClient only, no JSON
 };
 
 // BOOT: short press = next tile; hold WIFI_RESET_HOLD_MS = erase the saved
@@ -96,6 +99,7 @@ void app_init() {
     home_service_init();
     weather_service_init();
     alerts_service_init();
+    sysinfo_service_init();
 
     for (const TaskDef &t : kTasks) xTaskCreatePinnedToCore(t.fn, t.name, t.stack, nullptr, t.prio, nullptr, t.core);
     xTaskCreatePinnedToCore(input_task, "input", 2048, nullptr, 3, nullptr, 1);

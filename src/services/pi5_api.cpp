@@ -14,9 +14,10 @@ static int request(Pi5Api &api, const char *method, const char *path, String &bo
     // HTTPClient keeps the socket open between calls to the same host when
     // setReuse(true) and the server answers keep-alive (begin() on the same
     // URL host reuses the connected WiFiClient).
+    const uint16_t timeout = api.timeout_ms ? api.timeout_ms : PI5_API_TIMEOUT_MS;
     api.http.setReuse(true);
-    api.http.setConnectTimeout(PI5_API_TIMEOUT_MS);
-    api.http.setTimeout(PI5_API_TIMEOUT_MS);
+    api.http.setConnectTimeout(timeout);
+    api.http.setTimeout(timeout);
     if (!api.http.begin(api.tcp, config_pi5_api_host(), config_pi5_api_port(), path))
         return HTTPC_ERROR_CONNECTION_REFUSED;
 

@@ -12,6 +12,7 @@
 #include "ui/screens/screen_home.h"
 #include "ui/screens/screen_monitor.h"
 #include "ui/screens/screen_settings.h"
+#include "ui/screens/screen_sysinfo.h"
 #include "ui/screens/screen_weather.h"
 #include "ui/screens/screen_wifi.h"
 #include "ui/theme.h"
@@ -73,12 +74,20 @@ static void refresh_status() {
     status_bar_set_wifi(s_wifi_ok);
 }
 
-// ---------------- Alerts / Settings overlays ----------------
-// Own lv_screens, outside the swipe strip. Back returns to the tile left.
+// ---------------- Alerts / Settings / System info overlays ----------------
+// Own lv_screens, outside the swipe strip. Back returns to the tile left;
+// System info (opened from Settings) goes back to Settings.
 
 static bool overlay_active() {
     lv_obj_t *a = lv_screen_active();
-    return a == s_alerts_scr || a == s_settings_scr;
+    return a == s_alerts_scr || a == s_settings_scr || (a && a == screen_sysinfo_get());
+}
+
+// Every screen change except Settings <-> System info: System info exists only
+// while shown, so it is deleted once another screen is active.
+static void show_screen(lv_obj_t *scr) {
+    lv_screen_load(scr);
+    screen_sysinfo_drop();
 }
 
 static void leave_overlay() {
@@ -91,18 +100,30 @@ static void overlay_open(lv_obj_t *scr) {
     leave_overlay();
     if (scr == s_alerts_scr) screen_alerts_open();
     else screen_settings_poll();
-    lv_screen_load(scr);
+    show_screen(scr);
 }
 
 static void overlay_back() {
     leave_overlay();
     lv_tileview_set_tile_by_index(s_tv, s_return_tile, 0, LV_ANIM_OFF);
     refresh_status();
-    lv_screen_load(s_main_scr);
+    show_screen(s_main_scr);
 }
 
 static void open_alerts() { overlay_open(s_alerts_scr); }
 static void open_settings() { overlay_open(s_settings_scr); }
+
+// System info: built on open, slides in from the right; Back slides it out
+// and LVGL deletes it at the end of the animation (auto_del).
+static void sysinfo_back() {
+    screen_settings_poll();
+    lv_screen_load_anim(s_settings_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, SCREEN_ANIM_MS, 0, true);
+}
+
+static void open_sysinfo() {
+    if (screen_sysinfo_get()) return;   // already open, or still sliding out
+    lv_screen_load_anim(screen_sysinfo_create(sysinfo_back), LV_SCR_LOAD_ANIM_MOVE_LEFT, SCREEN_ANIM_MS, 0, false);
+}
 
 // ---------------- Wi-Fi setup screens ----------------
 
@@ -110,14 +131,14 @@ static void wifi_back() {
     s_wifi_dismissed = true;
     lv_tileview_set_tile_by_index(s_tv, TILE_MONITOR, 0, LV_ANIM_OFF);
     refresh_status();
-    lv_screen_load(s_main_scr);
+    show_screen(s_main_scr);
 }
 
 static void wifi_reopen() {
     s_wifi_dismissed = false;
     if (s_wifi_setup_done) return;
     leave_overlay();
-    lv_screen_load(s_wifi_scr);
+    show_screen(s_wifi_scr);
 }
 
 static void wifi_setup_apply(const WifiSetupInfo &info) {
@@ -125,11 +146,11 @@ static void wifi_setup_apply(const WifiSetupInfo &info) {
     s_wifi_setup_done = info.state == WifiSetupState::Connected;
     if (s_wifi_setup_done) s_wifi_dismissed = false;
     const bool want_main = s_wifi_setup_done || s_wifi_dismissed;
-    if (want_main && overlay_active()) return;   // Alerts / Settings count as the main UI
+    if (want_main && overlay_active()) return;   // Alerts / Settings / System info count as the main UI
     lv_obj_t *want = want_main ? s_main_scr : s_wifi_scr;
     if (lv_screen_active() != want) {
         if (!want_main) leave_overlay();
-        lv_screen_load(want);
+        show_screen(want);
     }
 }
 
@@ -219,6 +240,7 @@ static void poll_all() {
     for (const Tile &t : kTiles) t.poll();
     screen_alerts_poll();
     screen_settings_poll();
+    screen_sysinfo_poll();
     refresh_status();   // cheap: LVGL only redraws properties that changed
 }
 
@@ -227,7 +249,7 @@ static void poll_timer_cb(lv_timer_t *) { poll_all(); }
 // ---------------- navigation ----------------
 
 static void next_tile() {
-    if (overlay_active()) return;   // Alerts / Settings sit outside the swipe strip
+    if (overlay_active()) return;   // overlays sit outside the swipe strip
     int next = (active_tile() + 1) % TILE_COUNT;
     lv_tileview_set_tile_by_index(s_tv, next, 0, LV_ANIM_ON);
     refresh_status();   // set_tile updates the active tile immediately
@@ -279,7 +301,7 @@ void ui_init() {
     s_main_scr = scr;
     s_wifi_scr = screen_wifi_create(wifi_back);
     s_alerts_scr = screen_alerts_create(overlay_back);
-    s_settings_scr = screen_settings_create(overlay_back);
+    s_settings_scr = screen_settings_create(overlay_back, open_sysinfo);
     lv_screen_load(s_wifi_scr);
 
     lv_timer_create(poll_timer_cb, POLL_MS, nullptr);

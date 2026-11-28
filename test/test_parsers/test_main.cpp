@@ -302,6 +302,48 @@ static void test_format_age() {
     TEST_ASSERT_EQUAL_STRING("", b);
 }
 
+// ---------------- System info (task 9) ----------------
+static void test_rssi_bars() {
+    TEST_ASSERT_EQUAL(4, rssi_bars(-40));
+    TEST_ASSERT_EQUAL(4, rssi_bars(-55));
+    TEST_ASSERT_EQUAL(3, rssi_bars(-56));
+    TEST_ASSERT_EQUAL(3, rssi_bars(-65));
+    TEST_ASSERT_EQUAL(2, rssi_bars(-66));
+    TEST_ASSERT_EQUAL(2, rssi_bars(-75));
+    TEST_ASSERT_EQUAL(1, rssi_bars(-76));
+    TEST_ASSERT_EQUAL(1, rssi_bars(-85));
+    TEST_ASSERT_EQUAL(0, rssi_bars(-86));
+    TEST_ASSERT_EQUAL(0, rssi_bars(0));   // not connected
+}
+
+static void test_format_uptime() {
+    char b[24];
+    format_uptime(b, sizeof b, 59);
+    TEST_ASSERT_EQUAL_STRING("0m", b);
+    format_uptime(b, sizeof b, 12 * 60 + 5);
+    TEST_ASSERT_EQUAL_STRING("12m", b);
+    format_uptime(b, sizeof b, 4 * 3600 + 12 * 60);
+    TEST_ASSERT_EQUAL_STRING("4h 12m", b);
+    format_uptime(b, sizeof b, 2 * 86400 + 4 * 3600 + 12 * 60);
+    TEST_ASSERT_EQUAL_STRING("2d 4h 12m", b);
+    format_uptime(b, sizeof b, 60ULL * 86400);   // past the 49-day millis() wrap
+    TEST_ASSERT_EQUAL_STRING("60d 0h 0m", b);
+}
+
+static void test_format_size() {
+    char b[32];
+    format_size(b, sizeof b, 182 * 1024 + 500);
+    TEST_ASSERT_EQUAL_STRING("182 KB", b);
+    format_size(b, sizeof b, 1551892);   // 1.48 MB
+    TEST_ASSERT_EQUAL_STRING("1.48 MB", b);
+    format_size_pair(b, sizeof b, 182 * 1024, 320 * 1024);
+    TEST_ASSERT_EQUAL_STRING("182 / 320 KB", b);
+    format_size_pair(b, sizeof b, 7444889, 8386279);   // PSRAM: 7.1 / 8 MB
+    TEST_ASSERT_EQUAL_STRING("7.1 / 8 MB", b);
+    format_size_pair(b, sizeof b, 1698693, 0x1F0000);   // OTA slot: 1.62 / 1.94 MB
+    TEST_ASSERT_EQUAL_STRING("1.62 / 1.94 MB", b);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_ascii_sanitize);
@@ -310,6 +352,9 @@ int main() {
     RUN_TEST(test_alerts_capped_and_bad_json);
     RUN_TEST(test_location);
     RUN_TEST(test_format_age);
+    RUN_TEST(test_rssi_bars);
+    RUN_TEST(test_format_uptime);
+    RUN_TEST(test_format_size);
     RUN_TEST(test_pi_stats);
     RUN_TEST(test_services_spec_example);
     RUN_TEST(test_services_unknown_status_is_stopped);
