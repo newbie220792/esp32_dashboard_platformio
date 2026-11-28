@@ -14,7 +14,7 @@
 
 #include "core/models.h"
 
-enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Settings, Location, Alerts, ApiHealth, Count };
+enum class StateGroup : uint8_t { Net, WifiSetup, Pi5Stats, Services, Home, Weather, Settings, Location, Alerts, ApiHealth, Photos, Count };
 
 struct NetState {
     bool     wifi_connected;   // STA associated *and* has an IP
@@ -66,6 +66,21 @@ struct ApiHealthState {
     uint16_t  rtt_ms;          // Ok only
 };
 
+// Photos tab (task 10), written by photo_service. The two RGB565 frames live in
+// PSRAM and never move once allocated; `front` is the one to show. While the
+// UI fades to a new front, the service leaves the other buffer alone.
+struct PhotoState {
+    PhotoStatus status;
+    bool        have_frame;   // frames[front] holds a decoded photo
+    bool        paused;       // Pause/Play
+    uint8_t     dwell_s;      // 5 or 10 (NVS photo_s)
+    uint8_t     front;        // 0 / 1
+    uint16_t    index;        // shown photo, 0-based, in the current list
+    uint16_t    count;        // photos in the list
+    uint32_t    frame_seq;    // +1 each time a new frame becomes `front`
+    uint16_t   *frames[2];    // PHOTO_W x PHOTO_H RGB565 (LVGL byte order), nullptr until the tab opens
+};
+
 void state_init();
 
 // Zeroed buffer in PSRAM (falls back to internal RAM). For the ~7 KB HomeConfig /
@@ -114,6 +129,11 @@ void state_set_alerts_op(AlertsOp op);
 void state_set_alerts_list(const AlertList &list);              // op Idle, err None
 void state_set_alerts_error(AlertsErr err);                     // op Idle, list kept
 void state_alerts_cleared();                                    // empty list, unacked 0
+
+// ---- photos (photo_service) ----
+PhotoState state_get_photos();
+// Runs `fn(st, ctx)` under the lock and bumps the version if it returns true.
+void state_update_photos(bool (*fn)(PhotoState &st, void *ctx), void *ctx);
 
 // ---- Pi 5 health check (sysinfo_service, task 9) ----
 ApiHealthState state_get_api_health();

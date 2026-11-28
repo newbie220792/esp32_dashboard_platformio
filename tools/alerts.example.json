@@ -11,5 +11,9 @@
     "node-red": "warning"
   },
   "mqtt_host": "localhost",
-  "mqtt_port": 1883
+  "mqtt_port": 1883,
+  "photos_dir": "/home/pi/Pictures/dashboard",
+  "photos_cache": "/var/lib/esp32-dashboard/photo-cache",
+  "photos_order": "name",
+  "photos_limit": 100
 }

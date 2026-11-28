@@ -104,6 +104,25 @@ void config_save_settings(const Settings &s) {
     p.end();
 }
 
+// ---------------- photos ----------------
+
+uint8_t config_load_photo_s() {
+    Preferences p;
+    uint8_t s = 10;
+    if (p.begin(NVS_SETTINGS, true)) {
+        s = p.getUChar("photo_s", 10);
+        p.end();
+    }
+    return s == 5 ? 5 : 10;
+}
+
+void config_save_photo_s(uint8_t seconds) {
+    Preferences p;
+    if (!p.begin(NVS_SETTINGS, false)) return;
+    p.putUChar("photo_s", seconds == 5 ? 5 : 10);
+    p.end();
+}
+
 // ---------------- location ----------------
 
 bool config_load_location(Location &out) {

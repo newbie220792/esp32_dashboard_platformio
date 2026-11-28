@@ -1,10 +1,11 @@
 # ESP32 LVGL – Pi 5 Monitor, Weather & Home switches
 
-Firmware ESP32 hiển thị giao diện LVGL 9 gồm 3 màn hình vuốt ngang (`lv_tileview`):
+Firmware ESP32 hiển thị giao diện LVGL 9 gồm 4 màn hình vuốt ngang (`lv_tileview`):
 
 1. **Pi 5 Monitor**: CPU %, RAM %, nhiệt độ và danh sách service của Raspberry Pi 5 qua MQTT.
 2. **Weather**: thời tiết thời gian thực (Open-Meteo, không cần API key).
 3. **Home switches**: điều khiển công tắc nhà theo phòng → cụm → 3 công tắc qua MQTT.
+4. **Photos** (task 10): chiếu ảnh slide từ Pi 5 (REST), mỗi ảnh 5 hoặc 10 s, phủ kín 480x272, không thanh trạng thái.
 
 Ngoài dải vuốt có 3 màn phủ: **Alerts** (chuông, tối đa 10 cảnh báo từ Pi 5 qua REST) và **Settings**
 (bánh răng: độ sáng, tắt màn hình, °C/°F, vị trí chỉ đọc lấy từ Pi 5) của task 8, và **System info** (task 9,
@@ -34,7 +35,8 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - Chỉ xoay được 0° hoặc 180° (`TFT_ROTATION` 0 hoặc 2), không dùng 90°/270°.
 - Thẻ SD dùng chung bus với màn: nếu sau này dùng SD thì phải sắp thứ tự thao tác và kiểm tra lại cảm ứng.
 - Flash chỉ 4 MB (`huge_app.csv`, 3 MB cho app, không có OTA; nạp firmware qua USB): chỉ bật font và widget
-  LVGL đang dùng. Sau task 9 firmware ~1.49 MB, vẫn vừa vùng OTA ~1.94 MB nếu sau này chia lại phân vùng.
+  LVGL đang dùng. **Đã chốt bỏ OTA** (task 10): không có mã OTA, thanh Firmware size ở System info so với
+  vùng app ~3 MB. Sau task 10 firmware ~1.52 MB. Đổi bảng phân vùng thì phải `pio run -t erase` (xóa cả NVS).
 - Phiên bản firmware: **một nguồn duy nhất** `-D FW_VERSION=\"x.y.z\"` trong `build_flags` (`platformio.ini`).
   Thiếu macro thì `app_config.h` báo `#warning` và hiển thị `v?`, build không lỗi.
 - Draw buffer: 2 buffer 1/4 màn hình (480x68) trong PSRAM, chế độ partial.
@@ -48,7 +50,8 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - PlatformIO + Arduino framework (`espressif32@6.9.0`, Arduino-ESP32 2.0.17)
 - LVGL 9.2, **GFX Library for Arduino 1.4.9** (driver màn hình; bản 1.5+ cần Arduino-ESP32 3.x nên không nâng),
   TouchLib (cảm ứng), WiFiManager (cổng cấu hình Wi-Fi). Không dùng LovyanGFX/TFT_eSPI (không có NV3041A QSPI).
-- Thư viện MQTT: PubSubClient, JSON: ArduinoJson
+- Thư viện MQTT: PubSubClient, JSON: ArduinoJson, ảnh: **JPEGDEC 1.8.4** (chỉ JPEG baseline; `bb_spi_lcd` mà nó
+  kéo theo bị `lib_ignore`)
 - Thời gian: NTP, múi giờ Asia/Ho_Chi_Minh
 
 ## Lệnh thường dùng
@@ -59,7 +62,8 @@ Thiết kế tham chiếu: https://claude.ai/artifact/8uVQhRJiXyp4GNxhJ5E6Zd
 - Test script Python: `python3 -m unittest discover -s tools` (trên Windows không có `python`: dùng
   `~/.platformio/penv/Scripts/python.exe`; cũng không có `gcc` nên `pio test -e native` không chạy được)
 - API cảnh báo + vị trí trên Pi 5: `ALERTS_API_TOKEN=... sudo -E python3 tools/alerts_api.py --bind <IP LAN>
-  --config alerts.json` (mẫu `tools/alerts.example.json`, chi tiết `docs/pi5_api.md`)
+  --config alerts.json` (mẫu `tools/alerts.example.json`, chi tiết `docs/pi5_api.md`). Ảnh cho tab Photos: khóa
+  `photos_dir` trong config + `pip install pillow` (`tools/photos.py` xử lý một lần và lưu đệm).
 - Script Pi 5: `sudo python3 tools/pi5_stats_publisher.py --host <broker> --services nginx,mosquitto,docker,node-red`
 - Giả lập công tắc (không cần thiết bị thật): `python3 tools/home_sim.py --host <broker> [--drop 3]`.
   `--drop N` bỏ qua lệnh thứ N để thử hết thời gian chờ.
@@ -90,7 +94,7 @@ hal       src/hal/             display, touch, backlight, button,        ← ch�
   thời gian chờ, vị trí mặc định (`DEFAULT_CITY/LAT/LON`, chỉ dùng khi Pi 5 chưa trả lời lần nào).
 - `core/config.*`: **file duy nhất include `secrets.h`** (`config_wifi_ssid()`, `config_mqtt_host()`,
   `config_pi5_api_host()`, ...) và đọc/ghi NVS: mạng đã lưu (`wifi_cfg`), cài đặt (`settings`: `bright`,
-  `sleep_s`, `unit`), vị trí gần nhất (`location`).
+  `sleep_s`, `unit`, `photo_s` = 5/10 s của tab Photos, mặc định 10), vị trí gần nhất (`location`).
 - `core/models.h`, `core/parsers.*`: struct và hàm parse JSON/topic thuần (không phụ thuộc Arduino/LVGL).
   Env `native` chỉ biên dịch `core/parsers.cpp`; parse mới thì thêm test ở `test/test_parsers/`.
 - `services/ca_certs.h`: CA gốc ISRG Root X1 cho Open-Meteo (hết hạn 2035).
@@ -135,6 +139,11 @@ keep-alive (`services/pi5_api.*`). Chi tiết: `docs/pi5_api.md`.
 - `GET /api/location` lúc khởi động, khi có lại mạng, mỗi 5 phút → nhãn tab Weather, hàng Location, tọa độ thời tiết.
 - `GET /api/health` (`{"ok":true}`) chỉ khi màn System info mở và có IP: mỗi 10 s, timeout 3 s, task `sysinfo`
   (stack 6 KB), đo thời gian khứ hồi. Pi 5 trả 404 thì chuyển sang đo `GET /api/alerts/summary`.
+- Photos (task 10, task `photos`, stack 8 KB, chỉ chạy khi tab Photos đang hiển thị): `GET /api/photos`
+  (`{"rev","count","items":[{"id"}]}`, tối đa 100, timeout 5 s) mỗi lần mở tab và mỗi khi quay về ảnh đầu; `rev`
+  không đổi thì giữ vị trí. `GET /api/photos/<id>.jpg` (timeout 8 s) phải có `Content-Length` ≤ 96 KB, đọc đúng
+  số byte đó. Ảnh lỗi bị bỏ qua; quá 3 lỗi liên tiếp hoặc mất Wi-Fi → `Offline` (giữ ảnh cuối), thử lại sau 15 s.
+  Pi 5 quyết định ảnh nào và thứ tự (`photos_order`), ESP32 không lọc, không xáo.
 - Mọi chuỗi từ Pi 5 qua `ascii_sanitize()`: giữ ASCII, `°`, `•` (`·` thành `•`), ký tự khác thành `?`
   (font Montserrat dựng sẵn không có tiếng Việt).
 
@@ -184,6 +193,23 @@ keep-alive (`services/pi5_api.*`). Chi tiết: `docs/pi5_api.md`.
 - Danh sách cuộn dọc: container phải bật CLICKABLE (LVGL tìm đối tượng cuộn từ đối tượng được chạm
   đi lên cha, còn `ui_box()` tắt CLICKABLE), và chỉ đặt `LV_DIR_VER` để vuốt ngang vẫn đổi màn.
   Thanh cuộn 3px `#3A4656` qua `ui_style_scrollbar()` (`ui/theme.h`).
+
+### Tab Photos (task 10)
+
+- `photo_service`: 1 bộ đệm JPEG 96 KB + 2 khung RGB565 480x272 (2 x 261 120 B) + bảng JPEGDEC (~20 KB), tất cả
+  trong **PSRAM**, cấp một lần lần đầu mở tab (thiếu thì `No memory`). Giải mã ra `RGB565_LITTLE_ENDIAN` (đúng
+  thứ tự byte LVGL dùng; NV3041A đổi byte ở bus QSPI như mọi màn khác). Ảnh khác 480x272 bị cắt/viền đen,
+  progressive bị từ chối.
+- Một khung đang hiển thị, khung kia giải mã ảnh kế tiếp. `PhotoState.front` + `frame_seq` báo khung mới; UI
+  giữ `s_img[k]` luôn trỏ `frames[k]` (`lv_image_dsc_t`, không sao chép), đưa ảnh mới lên trên và mờ dần 300 ms.
+  Service không ghi vào khung cũ trong 400 ms sau khi đổi (`FADE_GUARD_MS`).
+- Chạm ảnh: hiện/ẩn thanh điều khiển (trên 56 px, dưới 84 px, nền chuyển màu là ngoại lệ duy nhất của quy tắc
+  "không gradient"), tự ẩn sau 3 s; khi thanh hiện, đồng hồ slide dừng (`PhotoCmd::Hold`). Đổi ảnh chỉ bằng
+  Prev/Next hoặc hẹn giờ; vuốt ngang chỉ đổi tab.
+- Tileview cao cả màn; các tab khác có `pad_top = UI_STATUS_H + UI_PAD`, thanh trạng thái ẩn ở tab Photos.
+  Số chấm trang = số tab trong `kTiles` (hiện 4; đặc tả ghi 5 vì tính sai số tab cũ).
+- Đèn nền: khi tab Photos hiển thị, `power_timer_cb` gọi `lv_display_trigger_activity()` mỗi 500 ms (không đổi
+  `sleep_s`); rời tab thì "Screen off" đếm lại từ lúc rời. Màn đang tắt sẵn thì chạm đầu tiên chỉ đánh thức.
 
 ## Quy tắc code
 

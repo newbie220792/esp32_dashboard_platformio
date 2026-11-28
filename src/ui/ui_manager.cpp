@@ -11,6 +11,7 @@
 #include "ui/screens/screen_alerts.h"
 #include "ui/screens/screen_home.h"
 #include "ui/screens/screen_monitor.h"
+#include "ui/screens/screen_photos.h"
 #include "ui/screens/screen_settings.h"
 #include "ui/screens/screen_sysinfo.h"
 #include "ui/screens/screen_weather.h"
@@ -27,6 +28,7 @@ static char s_city[CITY_LEN];
 static const char *city_title() { return s_city; }
 static const char *monitor_title() { return "Pi 5 MQTT"; }
 static const char *home_title() { return "Home MQTT"; }
+static const char *photos_title() { return "Photos"; }
 
 // The tiles, left to right. A new tab = one screen_* module + one row here.
 struct Tile {
@@ -40,9 +42,10 @@ static const Tile kTiles[] = {
     {monitor_title, screen_monitor_create, screen_monitor_poll, mqtt_dot},
     {city_title, screen_weather_create, screen_weather_poll, screen_weather_ok},
     {home_title, screen_home_create, screen_home_poll, mqtt_dot},
+    {photos_title, screen_photos_create, screen_photos_poll, mqtt_dot},   // full screen: no status bar
 };
 static constexpr int TILE_COUNT = sizeof kTiles / sizeof kTiles[0];
-enum { TILE_MONITOR = 0 };
+enum { TILE_MONITOR = 0, TILE_PHOTOS = TILE_COUNT - 1 };   // Photos is the last row of kTiles
 
 static lv_obj_t *s_tv;
 static lv_obj_t *s_tiles[TILE_COUNT];
@@ -66,8 +69,13 @@ static int active_tile() {
     return 0;
 }
 
+// Photos tab on screen right now (not an overlay / the Wi-Fi screens).
+static bool photos_visible() { return lv_screen_active() == s_main_scr && active_tile() == TILE_PHOTOS; }
+
 static void refresh_status() {
     const int t = active_tile();
+    status_bar_set_visible(t != TILE_PHOTOS);
+    screen_photos_set_visible(photos_visible());   // starts / stops downloads and the slide timer
     status_bar_set_page(t);
     status_bar_set_title(kTiles[t].title());
     status_bar_set_dot(kTiles[t].dot_ok());
@@ -187,6 +195,11 @@ static void power_set(ScreenPower p) {
 }
 
 static void power_timer_cb(lv_timer_t *) {
+    // Photos tab: the screen stays lit (brightness still from Settings). Keep
+    // LVGL's inactivity timer at ~0 instead of touching sleep_s, so leaving the
+    // tab restarts "Screen off" from that moment. A screen that was already
+    // dim/off when the tab came up still wakes on the first touch as usual.
+    if (s_power == ScreenPower::On && photos_visible()) lv_display_trigger_activity(nullptr);
     const uint32_t sleep_ms = state_get_settings().sleep_s * 1000UL;
     const uint32_t idle = lv_display_get_inactive_time(nullptr);
     ScreenPower p = ScreenPower::On;
@@ -274,8 +287,10 @@ void ui_init() {
     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
     s_tv = lv_tileview_create(scr);
-    lv_obj_set_size(s_tv, LV_PCT(100), lv_display_get_vertical_resolution(nullptr) - UI_STATUS_H);
-    lv_obj_align(s_tv, LV_ALIGN_TOP_LEFT, 0, UI_STATUS_H);
+    // Full height: the Photos tile covers the whole screen; the other tiles
+    // keep their content below the 28 px status bar through their top padding.
+    lv_obj_set_size(s_tv, LV_PCT(100), LV_PCT(100));
+    lv_obj_align(s_tv, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_style_bg_opa(s_tv, LV_OPA_TRANSP, 0);
     lv_obj_set_scrollbar_mode(s_tv, LV_SCROLLBAR_MODE_OFF);
     lv_obj_add_event_cb(s_tv, tile_changed_cb, LV_EVENT_VALUE_CHANGED, nullptr);
@@ -286,12 +301,14 @@ void ui_init() {
         if (i == TILE_COUNT - 1) dir = LV_DIR_LEFT;
         s_tiles[i] = lv_tileview_add_tile(s_tv, i, 0, dir);
         lv_obj_set_style_pad_all(s_tiles[i], UI_PAD, 0);
+        lv_obj_set_style_pad_top(s_tiles[i], UI_STATUS_H + UI_PAD, 0);
         lv_obj_remove_flag(s_tiles[i], LV_OBJ_FLAG_SCROLLABLE);
-        kTiles[i].create(s_tiles[i]);
+        kTiles[i].create(s_tiles[i]);   // screen_photos sets its own padding to 0
     }
 
     // created last so it draws above the tileview
     status_bar_create(scr, TILE_COUNT, StatusBarActions{wifi_reopen, open_alerts, open_settings});
+    screen_photos_set_pages(TILE_COUNT, TILE_PHOTOS);
 #if AUTO_ROTATE_MS > 0
     s_rotate_timer = lv_timer_create(rotate_timer_cb, AUTO_ROTATE_MS, nullptr);
 #endif

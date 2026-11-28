@@ -33,6 +33,12 @@ bool is_valid_topic_id(const char *id);
 WifiFailReason wifi_fail_reason(uint8_t disconnect_reason, int wl_status);
 const char *wifi_fail_reason_text(WifiFailReason r);
 
+// GET /api/photos: {"rev":"a41f9c","count":24,"items":[{"id":"p001"}, ...]}.
+// Keeps at most PHOTO_MAX_ITEMS; ids must be 1..12 chars of [A-Za-z0-9_-]
+// (anything else is skipped: no paths). False on malformed JSON or no "items"
+// array; `out` untouched then. `count` = ids kept, not the server's number.
+bool parse_photo_list(const char *json, size_t len, PhotoList &out);
+
 // Wi-Fi join QR payload: WIFI:T:WPA;S:<ssid>;P:<pass>;;  (T:nopass when pass
 // is empty). Escapes \ ; , : " as the format requires. False if it doesn't fit.
 bool build_wifi_qr(char *buf, size_t buf_len, const char *ssid, const char *pass);

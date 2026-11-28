@@ -178,8 +178,32 @@ struct SysInfo {
     uint32_t  heap_free, heap_total;
     uint32_t  psram_free, psram_total;
     uint32_t  sketch_size;    // 0 = not measured yet
-    uint32_t  app_size;       // running app partition
-    uint32_t  ota_size;       // OTA slot, 0 = no OTA partition
+    uint32_t  app_size;       // running app partition (huge_app.csv: ~3 MB, no OTA)
+};
+
+// ---------------- Photos tab (task 10) ----------------
+// GET /api/photos: the Pi 5 decides which photos and in which order.
+#define PHOTO_W         480
+#define PHOTO_H         272
+#define PHOTO_MAX_ITEMS 100
+#define PHOTO_ID_LEN    13      // 12 ASCII chars + NUL
+#define PHOTO_REV_LEN   17
+#define PHOTO_MAX_BYTES (96 * 1024)   // JPEG download buffer; the Pi 5 keeps photos <= 90 KB
+
+struct PhotoList {
+    char     rev[PHOTO_REV_LEN];
+    uint16_t count;
+    char     ids[PHOTO_MAX_ITEMS][PHOTO_ID_LEN];
+};
+
+enum class PhotoStatus : uint8_t {
+    Idle,            // tab never opened
+    Loading,         // first photo on its way (spinner)
+    Showing,         // a photo is on screen
+    Empty,           // the Pi 5 list is empty: "No photos"
+    Offline,         // no Wi-Fi / Pi 5 errors: last photo stays, "Offline" chip
+    NoMemory,        // PSRAM buffers could not be allocated
+    NotConfigured,   // PI5_API_HOST missing in secrets.h
 };
 
 // ---------------- Wi-Fi setup flow (wifi_setup.cpp -> ui_wifi.cpp) ----------------
